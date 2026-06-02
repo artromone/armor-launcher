@@ -59,6 +59,6 @@ class BootReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "ArmorBoot"
-        private const val LAUNCH_DELAY_MS = 1_500L
+        private const val LAUNCH_DELAY_MS = 500L
     }
 }

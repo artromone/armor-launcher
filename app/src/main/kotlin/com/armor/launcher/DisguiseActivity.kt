@@ -1,8 +1,10 @@
 package com.armor.launcher
 
 import android.app.admin.DevicePolicyManager
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -81,6 +83,19 @@ class DisguiseActivity : BaseDisguiseActivity() {
         if (!dpm.isDeviceOwnerApp(packageName)) return
         val admin = DeviceAdmin.componentName(this)
         try {
+            // Force ourselves to be the system's default HOME launcher. With
+            // this, after the user unlocks the keyguard, the system goes
+            // straight to DisguiseActivity — no launcher3 flash in between.
+            // Cleared in RescueReceiver.disarm() before clearDeviceOwnerApp.
+            dpm.addPersistentPreferredActivity(
+                admin,
+                IntentFilter(Intent.ACTION_MAIN).apply {
+                    addCategory(Intent.CATEGORY_HOME)
+                    addCategory(Intent.CATEGORY_DEFAULT)
+                },
+                ComponentName(this, DisguiseActivity::class.java)
+            )
+
             dpm.setLockTaskPackages(admin, AppCatalog.LOCK_TASK_WHITELIST)
             dpm.setLockTaskFeatures(admin, 0)
             startLockTask()

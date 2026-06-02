@@ -142,6 +142,10 @@ abstract class BaseDisguiseActivity : Activity() {
         try { stopLockTask() } catch (_: Exception) {}
         if (dpm.isDeviceOwnerApp(packageName)) {
             try {
+                dpm.clearPackagePersistentPreferredActivities(admin, packageName)
+                log.append("HOME • ")
+            } catch (e: Exception) { log.append("HOME err • ") }
+            try {
                 @Suppress("DEPRECATION")
                 dpm.clearDeviceOwnerApp(packageName); log.append("DO • ")
             } catch (e: Exception) { log.append("DO err • ") }

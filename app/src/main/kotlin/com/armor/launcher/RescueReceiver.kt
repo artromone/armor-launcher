@@ -33,6 +33,15 @@ class RescueReceiver : BroadcastReceiver() {
                 Log.w(TAG, "clear lockTaskPackages failed", e)
             }
             try {
+                // Drop our default-HOME claim BEFORE removing DO, otherwise the
+                // mapping persists with no owner and the system keeps routing
+                // HOME intents to a now-unprivileged Armor.
+                dpm.clearPackagePersistentPreferredActivities(admin, context.packageName)
+                Log.i(TAG, "Persistent preferred activities cleared")
+            } catch (e: Exception) {
+                Log.w(TAG, "clearPackagePersistentPreferredActivities failed", e)
+            }
+            try {
                 @Suppress("DEPRECATION")
                 dpm.clearDeviceOwnerApp(context.packageName)
                 Log.i(TAG, "Device Owner cleared")
