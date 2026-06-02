@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.KeyEvent
 import android.view.WindowManager
@@ -24,7 +26,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
         super.onCreate(savedInstanceState)
         // If a PIN is set and this is a cold start (no savedInstanceState),
         // jump to the lock screen first.
-        if (savedInstanceState == null && PinManager(this).isSet()
+        if (savedInstanceState == null && PinManager.forPin(this).isSet()
             && !intent.getBooleanExtra(EXTRA_FROM_LOCK, false)
         ) {
             startActivity(Intent(this, LockActivity::class.java).apply {
@@ -56,6 +58,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
         updateClock()
         tryStartLockTask()
+        HiddenAppsManager(this).applyAll()
     }
 
     override fun onResume() {
@@ -77,7 +80,55 @@ class DisguiseActivity : BaseDisguiseActivity() {
         tvDate?.text = dateFmt.format(now.time)
     }
 
+    // ---------- Secret combo: long-press 5 → digits → Real mode --------------
+
+    private val handler = Handler(Looper.getMainLooper())
+    private var awaitingSecret = false
+    private val secretBuf = StringBuilder()
+    private val longPress5Trigger = Runnable {
+        awaitingSecret = true
+        // Reset window
+        handler.removeCallbacks(secretTimeout)
+        handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
+        secretBuf.clear()
+        // No visible UI feedback — stays plausibly indistinguishable from a stuck key.
+    }
+    private val secretTimeout = Runnable {
+        awaitingSecret = false
+        secretBuf.clear()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Secret-input mode swallows digits and watches for a match.
+        if (awaitingSecret) {
+            val d = digitOf(keyCode)
+            if (d != null) {
+                secretBuf.append(d)
+                // Slide the timeout window forward on each press
+                handler.removeCallbacks(secretTimeout)
+                handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
+
+                val secretMgr = PinManager.forSecret(this)
+                if (secretMgr.isSet() && secretBuf.length >= secretMgr.pinLength()) {
+                    val attempt = secretBuf.toString()
+                    val ok = secretMgr.verify(attempt)
+                    awaitingSecret = false
+                    secretBuf.clear()
+                    handler.removeCallbacks(secretTimeout)
+                    if (ok) {
+                        startActivity(Intent(this, RealLauncherActivity::class.java))
+                    }
+                }
+                return true
+            }
+        }
+
+        // Long-press '5' starts secret-input mode after 3 s.
+        if (keyCode == KeyEvent.KEYCODE_5 && event?.repeatCount == 0 && !awaitingSecret) {
+            handler.removeCallbacks(longPress5Trigger)
+            handler.postDelayed(longPress5Trigger, LONG_PRESS_MS)
+        }
+
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 startActivity(Intent(this, MenuActivity::class.java)); return true
@@ -85,6 +136,22 @@ class DisguiseActivity : BaseDisguiseActivity() {
             KeyEvent.KEYCODE_BACK -> return true // swallow on home
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_5) {
+            handler.removeCallbacks(longPress5Trigger)
+        }
+        return super.onKeyUp(keyCode, event)
+    }
+
+    private fun digitOf(keyCode: Int): Char? = when (keyCode) {
+        KeyEvent.KEYCODE_0 -> '0'; KeyEvent.KEYCODE_1 -> '1'
+        KeyEvent.KEYCODE_2 -> '2'; KeyEvent.KEYCODE_3 -> '3'
+        KeyEvent.KEYCODE_4 -> '4'; KeyEvent.KEYCODE_5 -> '5'
+        KeyEvent.KEYCODE_6 -> '6'; KeyEvent.KEYCODE_7 -> '7'
+        KeyEvent.KEYCODE_8 -> '8'; KeyEvent.KEYCODE_9 -> '9'
+        else -> null
     }
 
     private fun tryStartLockTask() {
@@ -124,5 +191,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
     companion object {
         private const val TAG = "ArmorDisguise"
         const val EXTRA_FROM_LOCK = "from_lock"
+        private const val LONG_PRESS_MS = 3_000L
+        private const val SECRET_WINDOW_MS = 5_000L
     }
 }

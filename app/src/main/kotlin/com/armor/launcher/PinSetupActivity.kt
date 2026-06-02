@@ -14,7 +14,12 @@ import android.widget.TextView
  */
 class PinSetupActivity : BaseDisguiseActivity() {
 
-    private val pinManager by lazy { PinManager(this) }
+    private val isSecret by lazy { intent.getBooleanExtra(EXTRA_SECRET, false) }
+    private val pinManager by lazy {
+        if (isSecret) PinManager.forSecret(this) else PinManager.forPin(this)
+    }
+    private val label: String get() = if (isSecret) "Secret Code" else "PIN"
+
     private val entered = StringBuilder()
 
     private lateinit var promptView: TextView
@@ -28,7 +33,7 @@ class PinSetupActivity : BaseDisguiseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_pin_setup)
-        setTitleText(if (pinManager.isSet()) "Change PIN" else "Set PIN")
+        setTitleText(if (pinManager.isSet()) "Change $label" else "Set $label")
 
         promptView = findViewById(R.id.setup_prompt)
         pinView = findViewById(R.id.setup_pin)
@@ -130,9 +135,9 @@ class PinSetupActivity : BaseDisguiseActivity() {
 
     private fun renderPrompt() {
         promptView.text = when (stage) {
-            Stage.VERIFY_OLD -> "Enter current PIN"
-            Stage.ENTER_NEW -> "Enter new PIN (4-8 digits, # to confirm)"
-            Stage.CONFIRM_NEW -> "Re-enter new PIN"
+            Stage.VERIFY_OLD -> "Enter current $label"
+            Stage.ENTER_NEW -> "Enter new $label (4-8 digits, # to confirm)"
+            Stage.CONFIRM_NEW -> "Re-enter new $label"
         }
     }
 
@@ -147,5 +152,9 @@ class PinSetupActivity : BaseDisguiseActivity() {
             repeat(filled) { append('●') }
             repeat((total - filled).coerceAtLeast(0)) { append('○') }
         }
+    }
+
+    companion object {
+        const val EXTRA_SECRET = "is_secret"
     }
 }

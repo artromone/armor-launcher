@@ -17,9 +17,9 @@ import javax.crypto.spec.PBEKeySpec
  *  - Failed attempts are counted; after 5 fails we start exponential lockout
  *    starting at 30 s and doubling each subsequent failure (capped).
  */
-class PinManager(context: Context) {
+class PinManager(context: Context, prefsName: String = "armor_pin") {
 
-    private val prefs = context.getSharedPreferences("armor_pin", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
 
     fun isSet(): Boolean = prefs.contains(KEY_HASH)
 
@@ -99,6 +99,12 @@ class PinManager(context: Context) {
     companion object {
         const val MIN_LEN = 4
         const val MAX_LEN = 8
+
+        /** Factory for the unlock-PIN (used by LockActivity). */
+        fun forPin(c: Context) = PinManager(c, "armor_pin")
+
+        /** Factory for the secret code that toggles Real mode. */
+        fun forSecret(c: Context) = PinManager(c, "armor_secret")
 
         private const val KEY_HASH = "hash"
         private const val KEY_SALT = "salt"

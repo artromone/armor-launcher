@@ -23,7 +23,7 @@ class LockActivity : BaseDisguiseActivity() {
 
     override val isLockScreen: Boolean = true
 
-    private val pinManager by lazy { PinManager(this) }
+    private val pinManager by lazy { PinManager.forPin(this) }
     private val entered = StringBuilder()
 
     private lateinit var pinView: TextView

@@ -22,11 +22,28 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
         addRow(container, pinRowLabel()) {
             startActivity(Intent(this, PinSetupActivity::class.java))
         }
-        if (PinManager(this).isSet()) {
+        if (PinManager.forPin(this).isSet()) {
             addRow(container, "Remove PIN") {
-                PinManager(this).clearPin()
+                PinManager.forPin(this).clearPin()
                 recreate()
             }
+        }
+        addRow(container, secretRowLabel()) {
+            startActivity(Intent(this, PinSetupActivity::class.java).apply {
+                putExtra(PinSetupActivity.EXTRA_SECRET, true)
+            })
+        }
+        if (PinManager.forSecret(this).isSet()) {
+            addRow(container, "Remove Secret Code") {
+                PinManager.forSecret(this).clearPin()
+                recreate()
+            }
+        }
+        addRow(container, "Hidden Apps") {
+            startActivity(Intent(this, HiddenAppsActivity::class.java))
+        }
+        addRow(container, "Open Real Mode") {
+            startActivity(Intent(this, RealLauncherActivity::class.java))
         }
         addRow(container, "System Settings") {
             startActivity(Intent(Settings.ACTION_SETTINGS).apply {
@@ -40,7 +57,10 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
     }
 
     private fun pinRowLabel(): String =
-        if (PinManager(this).isSet()) "Change PIN" else "Set PIN"
+        if (PinManager.forPin(this).isSet()) "Change PIN" else "Set PIN"
+
+    private fun secretRowLabel(): String =
+        if (PinManager.forSecret(this).isSet()) "Change Secret Code" else "Set Secret Code"
 
     private fun addRow(container: LinearLayout, label: String, onClick: () -> Unit) {
         val tv = TextView(this).apply {

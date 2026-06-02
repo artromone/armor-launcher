@@ -69,6 +69,20 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Armor.NoBars" />
 
+        <activity
+            android:name=".HiddenAppsActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
+        <activity
+            android:name=".RealLauncherActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
         <receiver
             android:name=".DeviceAdmin"
             android:exported="true"

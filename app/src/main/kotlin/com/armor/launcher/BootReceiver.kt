@@ -43,7 +43,7 @@ class BootReceiver : BroadcastReceiver() {
 
     private fun launchDisguise(context: Context) {
         try {
-            val target = if (PinManager(context).isSet()) {
+            val target = if (PinManager.forPin(context).isSet()) {
                 LockActivity::class.java
             } else {
                 DisguiseActivity::class.java

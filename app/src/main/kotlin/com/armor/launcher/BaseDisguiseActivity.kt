@@ -38,7 +38,7 @@ abstract class BaseDisguiseActivity : Activity() {
 
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, i: Intent?) {
-            if (PinManager(this@BaseDisguiseActivity).isSet()) {
+            if (PinManager.forPin(this@BaseDisguiseActivity).isSet()) {
                 getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
                     .edit()
                     .putBoolean(KEY_LOCKED, true)
@@ -94,7 +94,7 @@ abstract class BaseDisguiseActivity : Activity() {
         }
     }
 
-    private fun shouldShowLockScreen(): Boolean = PinManager(this).isSet()
+    private fun shouldShowLockScreen(): Boolean = PinManager.forPin(this).isSet()
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
@@ -171,6 +171,8 @@ abstract class BaseDisguiseActivity : Activity() {
         val log = StringBuilder()
         try { stopLockTask() } catch (_: Exception) {}
         if (dpm.isDeviceOwnerApp(packageName)) {
+            try { HiddenAppsManager(this).showAll(); log.append("shown • ") }
+            catch (e: Exception) { log.append("show err • ") }
             try { dpm.setKeyguardDisabled(admin, false); log.append("KG • ") }
             catch (e: Exception) { log.append("KG err • ") }
             try {

@@ -28,6 +28,15 @@ class RescueReceiver : BroadcastReceiver() {
         if (dpm?.isDeviceOwnerApp(context.packageName) == true) {
             val admin = DeviceAdmin.componentName(context)
             try {
+                // Unhide everything before dropping DO — otherwise these apps
+                // stay invisible system-wide with no way for the user to bring
+                // them back without re-enrolling DO.
+                HiddenAppsManager(context).showAll()
+                Log.i(TAG, "Hidden apps revealed")
+            } catch (e: Exception) {
+                Log.w(TAG, "showAll failed", e)
+            }
+            try {
                 dpm.setLockTaskPackages(admin, emptyArray())
             } catch (e: Exception) {
                 Log.w(TAG, "clear lockTaskPackages failed", e)
