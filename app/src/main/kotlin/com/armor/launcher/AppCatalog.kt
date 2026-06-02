@@ -38,7 +38,7 @@ object AppCatalog {
         AppEntry("clock",      "Clock",      R.drawable.ic_clock,
             launchPackage = "com.google.android.deskclock"),
         AppEntry("settings",   "Settings",   R.drawable.ic_settings,
-            systemSettingsAction = android.provider.Settings.ACTION_SETTINGS),
+            launchClass = ArmorSettingsActivity::class.java),
     )
 
     /** Lock-task whitelist — these packages can be launched from inside kiosk. */

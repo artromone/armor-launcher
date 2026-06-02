@@ -45,6 +45,30 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.Armor.NoBars" />
 
+        <activity
+            android:name=".LockActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
+
+        <activity
+            android:name=".PinSetupActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
+        <activity
+            android:name=".ArmorSettingsActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
         <receiver
             android:name=".DeviceAdmin"
             android:exported="true"

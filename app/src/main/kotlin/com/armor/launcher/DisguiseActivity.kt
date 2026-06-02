@@ -22,8 +22,17 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Show over keyguard / turn on screen so we cover system UI as early
-        // as possible when coming back from sleep or after boot.
+        // If a PIN is set and this is a cold start (no savedInstanceState),
+        // jump to the lock screen first.
+        if (savedInstanceState == null && PinManager(this).isSet()
+            && !intent.getBooleanExtra(EXTRA_FROM_LOCK, false)
+        ) {
+            startActivity(Intent(this, LockActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            })
+            finish()
+            return
+        }
         window.addFlags(
             WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                 WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
@@ -112,5 +121,8 @@ class DisguiseActivity : BaseDisguiseActivity() {
         }
     }
 
-    companion object { private const val TAG = "ArmorDisguise" }
+    companion object {
+        private const val TAG = "ArmorDisguise"
+        const val EXTRA_FROM_LOCK = "from_lock"
+    }
 }

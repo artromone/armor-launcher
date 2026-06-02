@@ -43,7 +43,12 @@ class BootReceiver : BroadcastReceiver() {
 
     private fun launchDisguise(context: Context) {
         try {
-            val launch = Intent(context, DisguiseActivity::class.java).apply {
+            val target = if (PinManager(context).isSet()) {
+                LockActivity::class.java
+            } else {
+                DisguiseActivity::class.java
+            }
+            val launch = Intent(context, target).apply {
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -51,9 +56,9 @@ class BootReceiver : BroadcastReceiver() {
                 )
             }
             context.startActivity(launch)
-            Log.i(TAG, "DisguiseActivity launched")
+            Log.i(TAG, "Launched ${target.simpleName}")
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to launch DisguiseActivity from BootReceiver", e)
+            Log.e(TAG, "Failed to launch from BootReceiver", e)
         }
     }
 

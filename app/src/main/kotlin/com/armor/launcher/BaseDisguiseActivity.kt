@@ -36,6 +36,20 @@ abstract class BaseDisguiseActivity : Activity() {
         override fun onReceive(c: Context?, i: Intent?) = updateClock()
     }
 
+    private val screenOff = object : BroadcastReceiver() {
+        override fun onReceive(c: Context?, i: Intent?) {
+            if (PinManager(this@BaseDisguiseActivity).isSet()) {
+                getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
+                    .edit()
+                    .putBoolean(KEY_LOCKED, true)
+                    .apply()
+            }
+        }
+    }
+
+    /** Activities that ARE the lock screen itself opt-out (LockActivity). */
+    protected open val isLockScreen: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -53,18 +67,34 @@ abstract class BaseDisguiseActivity : Activity() {
             addAction(Intent.ACTION_TIME_CHANGED)
             addAction(Intent.ACTION_TIMEZONE_CHANGED)
         })
+        registerReceiver(screenOff, IntentFilter(Intent.ACTION_SCREEN_OFF))
         updateClock()
     }
 
     override fun onStop() {
         super.onStop()
         try { unregisterReceiver(timeTick) } catch (_: Exception) {}
+        try { unregisterReceiver(screenOff) } catch (_: Exception) {}
     }
 
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+        if (!isLockScreen && shouldShowLockScreen()) {
+            val needsLock = getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
+                .getBoolean(KEY_LOCKED, false)
+            if (needsLock) {
+                getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
+                    .edit().putBoolean(KEY_LOCKED, false).apply()
+                startActivity(Intent(this, LockActivity::class.java).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                })
+                finish()
+            }
+        }
     }
+
+    private fun shouldShowLockScreen(): Boolean = PinManager(this).isSet()
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
@@ -162,5 +192,7 @@ abstract class BaseDisguiseActivity : Activity() {
     companion object {
         private const val PANIC_PRESSES = 5
         private const val PANIC_WINDOW_MS = 3_000L
+        private const val PREFS_LOCK_STATE = "armor_lock_state"
+        private const val KEY_LOCKED = "needs_lock"
     }
 }
