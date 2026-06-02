@@ -83,10 +83,6 @@ class DisguiseActivity : BaseDisguiseActivity() {
         if (!dpm.isDeviceOwnerApp(packageName)) return
         val admin = DeviceAdmin.componentName(this)
         try {
-            // Force ourselves to be the system's default HOME launcher. With
-            // this, after the user unlocks the keyguard, the system goes
-            // straight to DisguiseActivity — no launcher3 flash in between.
-            // Cleared in RescueReceiver.disarm() before clearDeviceOwnerApp.
             dpm.addPersistentPreferredActivity(
                 admin,
                 IntentFilter(Intent.ACTION_MAIN).apply {
@@ -96,11 +92,25 @@ class DisguiseActivity : BaseDisguiseActivity() {
                 ComponentName(this, DisguiseActivity::class.java)
             )
 
+            // Kill the system keyguard entirely so there's no PIN screen and
+            // no swipe-down status bar gap between power-on and Armor.
+            // Fails silently if user still has a PIN/pattern/password set —
+            // they must remove it in Settings → Security → Screen lock → None
+            // first.
+            try {
+                val ok = dpm.setKeyguardDisabled(admin, true)
+                Log.i(TAG, "setKeyguardDisabled(true) returned $ok")
+            } catch (e: Exception) {
+                Log.w(TAG, "setKeyguardDisabled failed", e)
+            }
+
             dpm.setLockTaskPackages(admin, AppCatalog.LOCK_TASK_WHITELIST)
             dpm.setLockTaskFeatures(admin, 0)
             startLockTask()
         } catch (e: Exception) {
-            Log.w("ArmorDisguise", "Lock task start failed", e)
+            Log.w(TAG, "Lock task start failed", e)
         }
     }
+
+    companion object { private const val TAG = "ArmorDisguise" }
 }

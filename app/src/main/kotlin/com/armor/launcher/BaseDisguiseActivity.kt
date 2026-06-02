@@ -141,6 +141,8 @@ abstract class BaseDisguiseActivity : Activity() {
         val log = StringBuilder()
         try { stopLockTask() } catch (_: Exception) {}
         if (dpm.isDeviceOwnerApp(packageName)) {
+            try { dpm.setKeyguardDisabled(admin, false); log.append("KG • ") }
+            catch (e: Exception) { log.append("KG err • ") }
             try {
                 dpm.clearPackagePersistentPreferredActivities(admin, packageName)
                 log.append("HOME • ")

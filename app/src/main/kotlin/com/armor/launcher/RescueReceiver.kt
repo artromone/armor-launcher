@@ -33,6 +33,13 @@ class RescueReceiver : BroadcastReceiver() {
                 Log.w(TAG, "clear lockTaskPackages failed", e)
             }
             try {
+                // Re-enable the system keyguard if we had disabled it.
+                dpm.setKeyguardDisabled(admin, false)
+                Log.i(TAG, "Keyguard re-enabled")
+            } catch (e: Exception) {
+                Log.w(TAG, "setKeyguardDisabled(false) failed", e)
+            }
+            try {
                 // Drop our default-HOME claim BEFORE removing DO, otherwise the
                 // mapping persists with no owner and the system keeps routing
                 // HOME intents to a now-unprivileged Armor.
