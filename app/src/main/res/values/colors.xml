@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Retro monochrome LCD palette (Nokia 3310 inspired) -->
+    <color name="lcd_bg">#9CB59E</color>
+    <color name="lcd_fg">#15281F</color>
+    <color name="lcd_fg_dim">#3E5848</color>
+
+    <!-- Covert battery indicator colors -->
+    <color name="battery_green">#2F7A35</color>
+    <color name="battery_yellow">#C8A41E</color>
+    <color name="battery_red">#A82323</color>
+</resources>

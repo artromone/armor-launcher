@@ -1,0 +1,76 @@
+package com.armor.launcher
+
+import android.app.admin.DevicePolicyManager
+import android.content.Context
+import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import android.view.KeyEvent
+import android.widget.TextView
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
+
+class DisguiseActivity : BaseDisguiseActivity() {
+
+    private var tvTime: TextView? = null
+    private var tvAmPm: TextView? = null
+    private var tvDate: TextView? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_disguise)
+        tvTime = findViewById(R.id.tv_time)
+        tvAmPm = findViewById(R.id.tv_ampm)
+        tvDate = findViewById(R.id.tv_date)
+
+        bindSoftKey(R.id.btn_left, "Menu") {
+            startActivity(Intent(this, MenuActivity::class.java))
+        }
+        bindSoftKey(R.id.btn_right, "Contacts") {
+            val entry = AppCatalog.MENU.first { it.key == "contacts" }
+            val pkgIntent = entry.launchPackage?.let {
+                packageManager.getLaunchIntentForPackage(it)
+            }
+            if (pkgIntent != null) startActivity(pkgIntent)
+        }
+
+        updateClock()
+        tryStartLockTask()
+    }
+
+    override fun updateClock() {
+        val now = Calendar.getInstance()
+        val hour24 = now.get(Calendar.HOUR_OF_DAY)
+        val hour12 = if (hour24 % 12 == 0) 12 else hour24 % 12
+        val minute = now.get(Calendar.MINUTE)
+        tvTime?.text = String.format(Locale.US, "%02d:%02d", hour12, minute)
+        tvAmPm?.text = if (hour24 < 12) "AM" else "PM"
+
+        val dateFmt = SimpleDateFormat("EEE dd/MM/yyyy", Locale.US)
+        tvDate?.text = dateFmt.format(now.time)
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        when (keyCode) {
+            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
+                startActivity(Intent(this, MenuActivity::class.java)); return true
+            }
+            KeyEvent.KEYCODE_BACK -> return true // swallow on home
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun tryStartLockTask() {
+        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
+        if (!dpm.isDeviceOwnerApp(packageName)) return
+        val admin = DeviceAdmin.componentName(this)
+        try {
+            dpm.setLockTaskPackages(admin, AppCatalog.LOCK_TASK_WHITELIST)
+            dpm.setLockTaskFeatures(admin, 0)
+            startLockTask()
+        } catch (e: Exception) {
+            Log.w("ArmorDisguise", "Lock task start failed", e)
+        }
+    }
+}

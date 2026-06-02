@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:label="Armor"
+        android:icon="@android:drawable/sym_def_app_icon"
+        android:theme="@style/Theme.Armor"
+        android:allowBackup="false">
+
+        <activity
+            android:name=".DisguiseActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize|keyboard|navigation|locale|fontScale|uiMode"
+            android:theme="@style/Theme.Armor.NoBars">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".MenuActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
+        <activity
+            android:name=".StubActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
+        <activity
+            android:name=".CalculatorActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.Armor.NoBars" />
+
+        <receiver
+            android:name=".DeviceAdmin"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".RescueReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.armor.launcher.EXIT_KIOSK" />
+            </intent-filter>
+        </receiver>
+
+    </application>
+</manifest>
