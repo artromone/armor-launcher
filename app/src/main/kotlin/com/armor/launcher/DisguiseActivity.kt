@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import android.view.WindowManager
 import android.widget.TextView
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -19,6 +20,13 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Show over keyguard / turn on screen so we cover system UI as early
+        // as possible when coming back from sleep or after boot.
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        )
         setContentView(R.layout.activity_disguise)
         tvTime = findViewById(R.id.tv_time)
         tvAmPm = findViewById(R.id.tv_ampm)
@@ -36,6 +44,13 @@ class DisguiseActivity : BaseDisguiseActivity() {
         }
 
         updateClock()
+        tryStartLockTask()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Re-arm Lock Task in case the OS dropped it during pause (e.g. user
+        // navigated to system Settings and came back).
         tryStartLockTask()
     }
 
