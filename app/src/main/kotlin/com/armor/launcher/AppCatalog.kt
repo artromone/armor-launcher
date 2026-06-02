@@ -32,7 +32,7 @@ object AppCatalog {
         AppEntry("files",      "Files",      R.drawable.ic_files,
             launchPackage = "ru.zdevs.zarchiver"),
         AppEntry("files2",     "Files 2",    R.drawable.ic_files,
-            launchPackage = "ru.zdevs.zarchiver"),   // TODO: pick a 2nd app
+            launchPackage = "com.android.documentsui"),  // system Files
         AppEntry("calculator", "Calculator", R.drawable.ic_calculator,
             launchPackage = "com.google.android.calculator"),
         AppEntry("clock",      "Clock",      R.drawable.ic_clock,

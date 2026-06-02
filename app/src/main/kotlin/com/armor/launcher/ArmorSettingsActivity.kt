@@ -42,6 +42,14 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
         addRow(container, "Hidden Apps") {
             startActivity(Intent(this, HiddenAppsActivity::class.java))
         }
+        addRow(container, "Hide recommended set") {
+            val applied = HiddenAppsManager(this).hideRecommended()
+            android.widget.Toast.makeText(
+                this,
+                "Hidden ${applied.size} package(s)",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
         addRow(container, "Open Real Mode") {
             startActivity(Intent(this, RealLauncherActivity::class.java))
         }
