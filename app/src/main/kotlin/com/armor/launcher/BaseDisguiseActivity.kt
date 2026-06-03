@@ -7,8 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.os.SystemClock
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.widget.TextView
@@ -50,9 +53,16 @@ abstract class BaseDisguiseActivity : Activity() {
     /** Activities that ARE the lock screen itself opt-out (LockActivity). */
     protected open val isLockScreen: Boolean = false
 
+    // ---------- Idle dim / screen-off ----------------------------------------
+    private val idleHandler = Handler(Looper.getMainLooper())
+    private val dimRunnable = Runnable { applyDim() }
+    private val offRunnable = Runnable { goToSleep() }
+    private var isDimmed = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // Don't keep the screen on unconditionally — we want it to dim/sleep
+        // when the user idles. We manage that ourselves via idleHandler.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         @Suppress("DEPRECATION")
         window.decorView.setOnSystemUiVisibilityChangeListener { vis ->
@@ -80,6 +90,8 @@ abstract class BaseDisguiseActivity : Activity() {
     override fun onResume() {
         super.onResume()
         hideSystemBars()
+        restoreBrightness()
+        resetIdleTimers()
         if (!isLockScreen && shouldShowLockScreen()) {
             val needsLock = getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
                 .getBoolean(KEY_LOCKED, false)
@@ -95,6 +107,66 @@ abstract class BaseDisguiseActivity : Activity() {
     }
 
     private fun shouldShowLockScreen(): Boolean = PinManager.forPin(this).isSet()
+
+    override fun onPause() {
+        super.onPause()
+        idleHandler.removeCallbacks(dimRunnable)
+        idleHandler.removeCallbacks(offRunnable)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (ev?.action == MotionEvent.ACTION_DOWN) onUserInteraction()
+        return super.dispatchTouchEvent(ev)
+    }
+
+    override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if (event?.action == KeyEvent.ACTION_DOWN) onUserInteraction()
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        restoreBrightness()
+        resetIdleTimers()
+    }
+
+    private fun resetIdleTimers() {
+        idleHandler.removeCallbacks(dimRunnable)
+        idleHandler.removeCallbacks(offRunnable)
+        val prefs = PowerPrefs(this)
+        if (prefs.dimAfterMs != PowerPrefs.NEVER) {
+            idleHandler.postDelayed(dimRunnable, prefs.dimAfterMs)
+        }
+        if (prefs.offAfterMs != PowerPrefs.NEVER) {
+            idleHandler.postDelayed(offRunnable, prefs.offAfterMs)
+        }
+    }
+
+    private fun applyDim() {
+        isDimmed = true
+        val lp = window.attributes
+        lp.screenBrightness = 0.02f
+        window.attributes = lp
+    }
+
+    private fun restoreBrightness() {
+        if (!isDimmed) return
+        isDimmed = false
+        val lp = window.attributes
+        lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+        window.attributes = lp
+    }
+
+    private fun goToSleep() {
+        // Restore brightness first so when the screen turns back on it's not stuck dim.
+        restoreBrightness()
+        try {
+            val dpm = getSystemService(DevicePolicyManager::class.java)
+            if (dpm?.isAdminActive(DeviceAdmin.componentName(this)) == true) {
+                dpm.lockNow()
+            }
+        } catch (_: Exception) {}
+    }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)

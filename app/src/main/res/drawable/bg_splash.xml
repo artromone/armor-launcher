@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Splash window background — visually mimics DisguiseActivity so the cold
+     start of the launcher process is indistinguishable from the loaded home:
+     black field with the navy status-bar gradient stripe across the top. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <color android:color="#000000" />
+    </item>
+    <item
+        android:top="0dp"
+        android:gravity="top">
+        <shape android:shape="rectangle">
+            <size android:height="92dp" />
+            <gradient
+                android:startColor="#1B2D52"
+                android:centerColor="#152040"
+                android:endColor="#0A0F22"
+                android:angle="270" />
+        </shape>
+    </item>
+</layer-list>
