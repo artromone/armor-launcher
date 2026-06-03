@@ -1,10 +1,12 @@
 package com.armor.launcher
 
 import android.app.admin.DevicePolicyManager
+import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,8 +21,18 @@ import java.util.Locale
 class DisguiseActivity : BaseDisguiseActivity() {
 
     private var tvTime: TextView? = null
-    private var tvAmPm: TextView? = null
     private var tvDate: TextView? = null
+    private var tvBatteryPct: TextView? = null
+
+    private val batteryReceiver = object : BroadcastReceiver() {
+        override fun onReceive(c: Context?, i: Intent?) {
+            val level = i?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
+            val scale = i?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
+            if (level >= 0 && scale > 0) {
+                tvBatteryPct?.text = "${level * 100 / scale}%"
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,8 +54,8 @@ class DisguiseActivity : BaseDisguiseActivity() {
         )
         setContentView(R.layout.activity_disguise)
         tvTime = findViewById(R.id.tv_time)
-        tvAmPm = findViewById(R.id.tv_ampm)
         tvDate = findViewById(R.id.tv_date)
+        tvBatteryPct = findViewById(R.id.tv_battery_pct)
 
         bindSoftKey(R.id.btn_left, "Menu") {
             startActivity(Intent(this, MenuActivity::class.java))
@@ -71,13 +83,29 @@ class DisguiseActivity : BaseDisguiseActivity() {
     override fun updateClock() {
         val now = Calendar.getInstance()
         val hour24 = now.get(Calendar.HOUR_OF_DAY)
-        val hour12 = if (hour24 % 12 == 0) 12 else hour24 % 12
         val minute = now.get(Calendar.MINUTE)
-        tvTime?.text = String.format(Locale.US, "%02d:%02d", hour12, minute)
-        tvAmPm?.text = if (hour24 < 12) "AM" else "PM"
+        tvTime?.text = String.format(Locale.US, "%02d:%02d", hour24, minute)
 
-        val dateFmt = SimpleDateFormat("EEE dd/MM/yyyy", Locale.US)
+        val dateFmt = SimpleDateFormat("EEE dd.MM.yyyy", Locale.US)
         tvDate?.text = dateFmt.format(now.time)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // sticky broadcast — registering yields the current battery state immediately.
+        val sticky = registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
+        if (sticky != null) {
+            val level = sticky.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
+            val scale = sticky.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
+            if (level >= 0 && scale > 0) {
+                tvBatteryPct?.text = "${level * 100 / scale}%"
+            }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        try { unregisterReceiver(batteryReceiver) } catch (_: Exception) {}
     }
 
     // ---------- Secret combo: long-press 5 → digits → Real mode --------------
