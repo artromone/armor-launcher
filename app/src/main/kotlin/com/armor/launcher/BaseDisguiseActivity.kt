@@ -133,15 +133,11 @@ abstract class BaseDisguiseActivity : Activity() {
     private fun resetIdleTimers() {
         idleHandler.removeCallbacks(dimRunnable)
         idleHandler.removeCallbacks(offRunnable)
-        val prefs = PowerPrefs(this)
-        val dim = prefs.dimAfterMs
-        val off = prefs.offAfterMs
-        // Only schedule dim if it'd actually fire before off — otherwise it'd
-        // apply on an already-asleep window and survive into the next wake.
-        if (dim != PowerPrefs.NEVER && (off == PowerPrefs.NEVER || dim < off)) {
-            idleHandler.postDelayed(dimRunnable, dim)
-        }
+        val off = PowerPrefs(this).offAfterMs
         if (off != PowerPrefs.NEVER) {
+            // Dim always fires 5s before off (or immediately if off ≤ 5s).
+            val dim = (off - DIM_LEAD_MS).coerceAtLeast(0L)
+            idleHandler.postDelayed(dimRunnable, dim)
             idleHandler.postDelayed(offRunnable, off)
         }
     }
@@ -149,7 +145,7 @@ abstract class BaseDisguiseActivity : Activity() {
     private fun applyDim() {
         isDimmed = true
         val lp = window.attributes
-        lp.screenBrightness = 0.02f
+        lp.screenBrightness = 0.01f
         window.attributes = lp
     }
 
@@ -281,5 +277,6 @@ abstract class BaseDisguiseActivity : Activity() {
         private const val PANIC_WINDOW_MS = 3_000L
         private const val PREFS_LOCK_STATE = "armor_lock_state"
         private const val KEY_LOCKED = "needs_lock"
+        private const val DIM_LEAD_MS = 5_000L
     }
 }

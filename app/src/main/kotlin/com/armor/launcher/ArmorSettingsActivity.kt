@@ -40,10 +40,6 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
             }
         }
         val power = PowerPrefs(this)
-        addRow(container, "Screen dim after: ${PowerPrefs.label(power.dimAfterMs)}") {
-            power.dimAfterMs = PowerPrefs.next(power.dimAfterMs, PowerPrefs.DIM_OPTIONS)
-            recreate()
-        }
         addRow(container, "Screen off after: ${PowerPrefs.label(power.offAfterMs)}") {
             power.offAfterMs = PowerPrefs.next(power.offAfterMs, PowerPrefs.OFF_OPTIONS)
             recreate()
