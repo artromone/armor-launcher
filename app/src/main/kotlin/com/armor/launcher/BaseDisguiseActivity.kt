@@ -136,33 +136,29 @@ abstract class BaseDisguiseActivity : Activity() {
             // (LockActivity / PinSetup / Calculator all eat digits).
             if (handleSecretCombo(event.keyCode, event)) return true
         }
+        // Swallow KEYCODE_POUND when we're in the middle of the emergency
+        // hold so it doesn't also reach Subclass.onKeyDown as a normal '#'.
+        if (event?.keyCode == KeyEvent.KEYCODE_POUND) return true
         return super.dispatchKeyEvent(event)
     }
 
-    // ---------- Emergency lock: 2+5 held together for 2s --------------------
+    // ---------- Emergency lock: hold '#' for 2s -----------------------------
     private val emergencyHandler = Handler(Looper.getMainLooper())
-    private var key2Down = false
-    private var key5Down = false
     private val emergencyRunnable = Runnable {
         RealMode.lock()
-        android.widget.Toast.makeText(
-            this, "DISGUISE", android.widget.Toast.LENGTH_SHORT
-        ).show()
         startActivity(Intent(this, DisguiseActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
         })
     }
 
     private fun trackEmergencyLock(event: KeyEvent) {
-        val down = event.action == KeyEvent.ACTION_DOWN
-        when (event.keyCode) {
-            KeyEvent.KEYCODE_2 -> key2Down = down
-            KeyEvent.KEYCODE_5 -> key5Down = down
-            else -> return
-        }
-        emergencyHandler.removeCallbacks(emergencyRunnable)
-        if (key2Down && key5Down) {
-            emergencyHandler.postDelayed(emergencyRunnable, EMERGENCY_HOLD_MS)
+        if (event.keyCode != KeyEvent.KEYCODE_POUND) return
+        when (event.action) {
+            KeyEvent.ACTION_DOWN -> if (event.repeatCount == 0) {
+                emergencyHandler.removeCallbacks(emergencyRunnable)
+                emergencyHandler.postDelayed(emergencyRunnable, EMERGENCY_HOLD_MS)
+            }
+            KeyEvent.ACTION_UP -> emergencyHandler.removeCallbacks(emergencyRunnable)
         }
     }
 
@@ -330,19 +326,12 @@ abstract class BaseDisguiseActivity : Activity() {
             secretBuf.append(d)
             secretHandler.removeCallbacks(secretTimeout)
             secretHandler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
-            android.widget.Toast.makeText(
-                this, "secret: $secretBuf", android.widget.Toast.LENGTH_SHORT
-            ).show()
             val mgr = PinManager.forSecret(this)
             if (secretBuf.length >= mgr.pinLength()) {
                 val ok = mgr.verify(secretBuf.toString())
                 awaitingSecret = false
                 secretBuf.clear()
                 secretHandler.removeCallbacks(secretTimeout)
-                android.widget.Toast.makeText(
-                    this, if (ok) "UNLOCK OK" else "WRONG CODE",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
                 if (ok) {
                     RealMode.unlock()
                     startActivity(Intent(this, RealLauncherActivity::class.java))
@@ -356,21 +345,12 @@ abstract class BaseDisguiseActivity : Activity() {
             while (starPresses.isNotEmpty() && now - starPresses.first() > STAR_WINDOW_MS) {
                 starPresses.removeFirst()
             }
-            android.widget.Toast.makeText(
-                this, "star ${starPresses.size}/$STAR_PRESSES",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
             if (starPresses.size >= STAR_PRESSES) {
                 starPresses.clear()
                 awaitingSecret = true
                 secretBuf.clear()
                 secretHandler.removeCallbacks(secretTimeout)
                 secretHandler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
-                android.widget.Toast.makeText(
-                    this,
-                    "AWAITING SECRET (${PinManager.forSecret(this).pinLength()} digits)",
-                    android.widget.Toast.LENGTH_LONG
-                ).show()
             }
             return true
         }
