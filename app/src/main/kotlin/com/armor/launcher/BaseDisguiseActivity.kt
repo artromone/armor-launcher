@@ -9,6 +9,7 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
@@ -129,17 +130,10 @@ abstract class BaseDisguiseActivity : Activity() {
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
         if (event?.action == KeyEvent.ACTION_DOWN) {
             onUserInteraction()
-            // DEBUG: surface every key on every screen, regardless of who
-            // ultimately consumes it. Tells us:
-            //   - is the new APK actually installed (panic was removed; if
-            //     you still see PANIC behaviour, build cache is stale)
-            //   - does '*' emit KEYCODE_STAR (17) on Qin F22 or something else
-            val code = event.keyCode
-            android.widget.Toast.makeText(
-                this,
-                "${javaClass.simpleName} key=$code (${KeyEvent.keyCodeToString(code)}) RM=${RealMode.unlocked}",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
+            // Real-mode unlock combo runs pre-routing so it works on every
+            // disguise screen even when the subclass would consume the key
+            // (LockActivity / PinSetup / Calculator all eat digits).
+            if (handleSecretCombo(event.keyCode, event)) return true
         }
         return super.dispatchKeyEvent(event)
     }
@@ -271,6 +265,16 @@ abstract class BaseDisguiseActivity : Activity() {
 
     // ---------- Key handling -------------------------------------------------
 
+    private val secretHandler = Handler(Looper.getMainLooper())
+    private var awaitingSecret = false
+    private val secretBuf = StringBuilder()
+    private val starPresses = ArrayDeque<Long>()
+    private val secretTimeout = Runnable {
+        awaitingSecret = false
+        secretBuf.clear()
+        starPresses.clear()
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         // Qin F22 physical soft keys (the two above Call/End):
         //   left → SOFT_LEFT or MENU   → click btn_left
@@ -292,6 +296,68 @@ abstract class BaseDisguiseActivity : Activity() {
         }
     }
 
+    private fun handleSecretCombo(keyCode: Int, event: KeyEvent?): Boolean {
+        if (awaitingSecret) {
+            val d = digitOf(keyCode) ?: return false
+            secretBuf.append(d)
+            secretHandler.removeCallbacks(secretTimeout)
+            secretHandler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
+            android.widget.Toast.makeText(
+                this, "secret: $secretBuf", android.widget.Toast.LENGTH_SHORT
+            ).show()
+            val mgr = PinManager.forSecret(this)
+            if (secretBuf.length >= mgr.pinLength()) {
+                val ok = mgr.verify(secretBuf.toString())
+                awaitingSecret = false
+                secretBuf.clear()
+                secretHandler.removeCallbacks(secretTimeout)
+                android.widget.Toast.makeText(
+                    this, if (ok) "UNLOCK OK" else "WRONG CODE",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+                if (ok) {
+                    RealMode.unlock()
+                    startActivity(Intent(this, RealLauncherActivity::class.java))
+                }
+            }
+            return true
+        }
+        if (keyCode == KeyEvent.KEYCODE_STAR && event?.repeatCount == 0) {
+            val now = SystemClock.uptimeMillis()
+            starPresses.addLast(now)
+            while (starPresses.isNotEmpty() && now - starPresses.first() > STAR_WINDOW_MS) {
+                starPresses.removeFirst()
+            }
+            android.widget.Toast.makeText(
+                this, "star ${starPresses.size}/$STAR_PRESSES",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+            if (starPresses.size >= STAR_PRESSES) {
+                starPresses.clear()
+                awaitingSecret = true
+                secretBuf.clear()
+                secretHandler.removeCallbacks(secretTimeout)
+                secretHandler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
+                android.widget.Toast.makeText(
+                    this,
+                    "AWAITING SECRET (${PinManager.forSecret(this).pinLength()} digits)",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            }
+            return true
+        }
+        return false
+    }
+
+    private fun digitOf(keyCode: Int): Char? = when (keyCode) {
+        KeyEvent.KEYCODE_0 -> '0'; KeyEvent.KEYCODE_1 -> '1'
+        KeyEvent.KEYCODE_2 -> '2'; KeyEvent.KEYCODE_3 -> '3'
+        KeyEvent.KEYCODE_4 -> '4'; KeyEvent.KEYCODE_5 -> '5'
+        KeyEvent.KEYCODE_6 -> '6'; KeyEvent.KEYCODE_7 -> '7'
+        KeyEvent.KEYCODE_8 -> '8'; KeyEvent.KEYCODE_9 -> '9'
+        else -> null
+    }
+
     private fun clickSoftKey(id: Int): Boolean {
         val v = findViewById<TextView?>(id) ?: return false
         if (v.text.isNullOrBlank()) return false
@@ -302,5 +368,8 @@ abstract class BaseDisguiseActivity : Activity() {
         private const val PREFS_LOCK_STATE = "armor_lock_state"
         private const val KEY_LOCKED = "needs_lock"
         private const val DIM_LEAD_MS = 5_000L
+        private const val STAR_PRESSES = 5
+        private const val STAR_WINDOW_MS = 3_000L
+        private const val SECRET_WINDOW_MS = 5_000L
     }
 }

@@ -8,14 +8,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.TextView
-import android.widget.Toast
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -110,69 +106,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
         try { unregisterReceiver(batteryReceiver) } catch (_: Exception) {}
     }
 
-    // ---------- Secret combo: 5×'*' in 3s → digits → Real mode --------------
-
-    private val handler = Handler(Looper.getMainLooper())
-    private var awaitingSecret = false
-    private val secretBuf = StringBuilder()
-    private val starPresses = ArrayDeque<Long>()
-    private val secretTimeout = Runnable {
-        awaitingSecret = false
-        secretBuf.clear()
-        starPresses.clear()
-    }
-
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // DEBUG: see exactly what the Qin F22 keypad sends.
-        Log.i(TAG, "onKeyDown code=$keyCode name=${KeyEvent.keyCodeToString(keyCode)} repeat=${event?.repeatCount}")
-        Toast.makeText(this, "key=$keyCode (${KeyEvent.keyCodeToString(keyCode)})", Toast.LENGTH_SHORT).show()
-
-        // Secret-input mode swallows digits and watches for a match.
-        if (awaitingSecret) {
-            val d = digitOf(keyCode)
-            if (d != null) {
-                secretBuf.append(d)
-                Toast.makeText(this, "secret: ${secretBuf} (need len=${PinManager.forSecret(this).pinLength()})", Toast.LENGTH_SHORT).show()
-                // Slide the timeout window forward on each press
-                handler.removeCallbacks(secretTimeout)
-                handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
-
-                val secretMgr = PinManager.forSecret(this)
-                if (secretMgr.isSet() && secretBuf.length >= secretMgr.pinLength()) {
-                    val attempt = secretBuf.toString()
-                    val ok = secretMgr.verify(attempt)
-                    awaitingSecret = false
-                    secretBuf.clear()
-                    handler.removeCallbacks(secretTimeout)
-                    Toast.makeText(this, if (ok) "UNLOCK OK" else "WRONG CODE", Toast.LENGTH_LONG).show()
-                    if (ok) {
-                        RealMode.unlock()
-                        startActivity(Intent(this, RealLauncherActivity::class.java))
-                    }
-                }
-                return true
-            }
-        }
-
-        // 5×'*' in 3 s starts secret-input mode.
-        if (keyCode == KeyEvent.KEYCODE_STAR && event?.repeatCount == 0) {
-            val now = SystemClock.uptimeMillis()
-            starPresses.addLast(now)
-            while (starPresses.isNotEmpty() && now - starPresses.first() > STAR_WINDOW_MS) {
-                starPresses.removeFirst()
-            }
-            Toast.makeText(this, "star ${starPresses.size}/$STAR_PRESSES", Toast.LENGTH_SHORT).show()
-            if (starPresses.size >= STAR_PRESSES) {
-                starPresses.clear()
-                awaitingSecret = true
-                secretBuf.clear()
-                handler.removeCallbacks(secretTimeout)
-                handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
-                Toast.makeText(this, "AWAITING SECRET (type ${PinManager.forSecret(this).pinLength()} digits)", Toast.LENGTH_LONG).show()
-            }
-            return true
-        }
-
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 startActivity(Intent(this, MenuActivity::class.java)); return true
@@ -180,15 +114,6 @@ class DisguiseActivity : BaseDisguiseActivity() {
             // BACK falls through to Base → clicks btn_right ("Contacts").
         }
         return super.onKeyDown(keyCode, event)
-    }
-
-    private fun digitOf(keyCode: Int): Char? = when (keyCode) {
-        KeyEvent.KEYCODE_0 -> '0'; KeyEvent.KEYCODE_1 -> '1'
-        KeyEvent.KEYCODE_2 -> '2'; KeyEvent.KEYCODE_3 -> '3'
-        KeyEvent.KEYCODE_4 -> '4'; KeyEvent.KEYCODE_5 -> '5'
-        KeyEvent.KEYCODE_6 -> '6'; KeyEvent.KEYCODE_7 -> '7'
-        KeyEvent.KEYCODE_8 -> '8'; KeyEvent.KEYCODE_9 -> '9'
-        else -> null
     }
 
     private fun tryStartLockTask() {
@@ -237,8 +162,5 @@ class DisguiseActivity : BaseDisguiseActivity() {
     companion object {
         private const val TAG = "ArmorDisguise"
         const val EXTRA_FROM_LOCK = "from_lock"
-        private const val STAR_PRESSES = 5
-        private const val STAR_WINDOW_MS = 3_000L
-        private const val SECRET_WINDOW_MS = 5_000L
     }
 }
