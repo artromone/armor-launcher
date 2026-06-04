@@ -161,7 +161,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
                 startActivity(Intent(this, MenuActivity::class.java)); return true
             }
-            KeyEvent.KEYCODE_BACK -> return true // swallow on home
+            // BACK falls through to Base → clicks btn_right ("Contacts").
         }
         return super.onKeyDown(keyCode, event)
     }

@@ -257,12 +257,30 @@ abstract class BaseDisguiseActivity : Activity() {
         if (keyCode == KeyEvent.KEYCODE_STAR) {
             if (handleStarPress()) return true
         }
+        // Qin F22 physical soft keys (the two above Call/End):
+        //   left → SOFT_LEFT or MENU   → click btn_left
+        //   right → SOFT_RIGHT or BACK → click btn_right
+        // Subclasses that handle BACK themselves (LockActivity, PinSetup,
+        // Menu, Calculator, Stub) return true before super and never reach
+        // this — so we don't clobber backspace/finish semantics there.
+        when (keyCode) {
+            KeyEvent.KEYCODE_SOFT_LEFT, KeyEvent.KEYCODE_MENU ->
+                if (clickSoftKey(R.id.btn_left)) return true
+            KeyEvent.KEYCODE_SOFT_RIGHT, KeyEvent.KEYCODE_BACK ->
+                if (clickSoftKey(R.id.btn_right)) return true
+        }
         return when (keyCode) {
             KeyEvent.KEYCODE_HOME,
             KeyEvent.KEYCODE_APP_SWITCH,
             KeyEvent.KEYCODE_MENU -> true
             else -> super.onKeyDown(keyCode, event)
         }
+    }
+
+    private fun clickSoftKey(id: Int): Boolean {
+        val v = findViewById<TextView?>(id) ?: return false
+        if (v.text.isNullOrBlank()) return false
+        return v.performClick()
     }
 
     /** Returns true if this press completed the panic sequence (consume). */
