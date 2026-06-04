@@ -13,6 +13,7 @@ import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.TextView
 import android.widget.Toast
@@ -22,6 +23,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.core.content.edit
 
 /**
  * Common scaffolding shared by every disguise screen:
@@ -58,6 +60,7 @@ abstract class BaseDisguiseActivity : Activity() {
     private val dimRunnable = Runnable { applyDim() }
     private val offRunnable = Runnable { goToSleep() }
     private var isDimmed = false
+    private var dimOverlay: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -147,6 +150,13 @@ abstract class BaseDisguiseActivity : Activity() {
         val lp = window.attributes
         lp.screenBrightness = 0.01f
         window.attributes = lp
+        // Fallback for ROMs that ignore window brightness override (Qin F22):
+        // overlay a near-opaque black View. Non-clickable so touches pass
+        // through to the activity's dispatchTouchEvent and wake us.
+        ensureDimOverlay().apply {
+            bringToFront()
+            visibility = View.VISIBLE
+        }
     }
 
     private fun restoreBrightness() {
@@ -155,6 +165,28 @@ abstract class BaseDisguiseActivity : Activity() {
         val lp = window.attributes
         lp.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
         window.attributes = lp
+        dimOverlay?.visibility = View.GONE
+    }
+
+    private fun ensureDimOverlay(): View {
+        dimOverlay?.let { return it }
+        val v = View(this).apply {
+            setBackgroundColor(0xFF000000.toInt())
+            alpha = 0.85f
+            isClickable = false
+            isFocusable = false
+            visibility = View.GONE
+        }
+        val root = window.decorView as ViewGroup
+        root.addView(
+            v,
+            ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
+        dimOverlay = v
+        return v
     }
 
     private fun goToSleep() {
@@ -165,9 +197,9 @@ abstract class BaseDisguiseActivity : Activity() {
         // broadcast is delivered, which would leave us unlocked on next wake.
         if (PinManager.forPin(this).isSet()) {
             getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
-                .edit()
-                .putBoolean(KEY_LOCKED, true)
-                .apply()
+                .edit {
+                    putBoolean(KEY_LOCKED, true)
+                }
         }
         try {
             val dpm = getSystemService(DevicePolicyManager::class.java)
@@ -198,7 +230,9 @@ abstract class BaseDisguiseActivity : Activity() {
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             )
         val c = WindowInsetsControllerCompat(window, window.decorView)
-        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        // BEHAVIOR_DEFAULT — no swipe-to-reveal peek; combined with
+        // setStatusBarDisabled() in Lock Task this fully suppresses the shade.
+        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
         c.hide(WindowInsetsCompat.Type.systemBars())
     }
 
@@ -254,6 +288,8 @@ abstract class BaseDisguiseActivity : Activity() {
         if (dpm.isDeviceOwnerApp(packageName)) {
             try { HiddenAppsManager(this).showAll(); log.append("shown • ") }
             catch (e: Exception) { log.append("show err • ") }
+            try { dpm.setStatusBarDisabled(admin, false); log.append("SB • ") }
+            catch (e: Exception) { log.append("SB err • ") }
             try { dpm.setKeyguardDisabled(admin, false); log.append("KG • ") }
             catch (e: Exception) { log.append("KG err • ") }
             try {

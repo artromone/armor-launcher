@@ -211,6 +211,15 @@ class DisguiseActivity : BaseDisguiseActivity() {
             dpm.setLockTaskPackages(admin, AppCatalog.LOCK_TASK_WHITELIST)
             dpm.setLockTaskFeatures(admin, 0)
             startLockTask()
+
+            // Kill the status-bar peek (swipe-down sliver). Requires Device
+            // Owner + active Lock Task. Returns true if SystemUI accepted.
+            try {
+                val ok = dpm.setStatusBarDisabled(admin, true)
+                Log.i(TAG, "setStatusBarDisabled(true) returned $ok")
+            } catch (e: Exception) {
+                Log.w(TAG, "setStatusBarDisabled failed", e)
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Lock task start failed", e)
         }
