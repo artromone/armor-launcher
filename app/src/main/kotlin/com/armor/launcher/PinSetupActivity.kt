@@ -3,6 +3,8 @@ package com.armor.launcher
 import android.os.Bundle
 import android.view.KeyEvent
 import android.widget.TextView
+import com.armor.launcher.domain.PinManager
+import com.armor.launcher.platform.KeyCodes
 
 /**
  * Three-step flow:

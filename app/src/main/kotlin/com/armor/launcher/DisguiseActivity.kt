@@ -11,6 +11,11 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.TextView
+import com.armor.launcher.domain.AppCatalog
+import com.armor.launcher.domain.HiddenAppsManager
+import com.armor.launcher.domain.PinManager
+import com.armor.launcher.platform.Dpm
+import com.armor.launcher.platform.Intents
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale

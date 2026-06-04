@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 /**
  * Process-wide flag: is Real mode currently unlocked?

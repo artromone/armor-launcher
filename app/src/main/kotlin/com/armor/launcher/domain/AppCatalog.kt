@@ -1,4 +1,7 @@
-package com.armor.launcher
+package com.armor.launcher.domain
+
+import com.armor.launcher.ArmorSettingsActivity
+import com.armor.launcher.R
 
 /**
  * Single source of truth for the disguise-mode app catalog.

@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.content.BroadcastReceiver
 import android.content.Context

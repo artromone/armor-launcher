@@ -10,6 +10,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import com.armor.launcher.domain.HiddenAppsManager
 
 /**
  * Manages the hidden-apps allowlist. Lists every launchable user app

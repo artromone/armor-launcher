@@ -7,6 +7,10 @@ import android.view.Gravity
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.armor.launcher.domain.HiddenAppsManager
+import com.armor.launcher.domain.PinManager
+import com.armor.launcher.domain.PowerPrefs
+import com.armor.launcher.platform.RealMode
 
 class ArmorSettingsActivity : BaseDisguiseActivity() {
 

@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.domain
 
 import android.content.Context
 import android.util.Base64

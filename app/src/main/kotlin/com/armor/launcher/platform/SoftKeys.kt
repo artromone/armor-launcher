@@ -1,8 +1,9 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.app.Activity
 import android.view.KeyEvent
 import android.widget.TextView
+import com.armor.launcher.R
 
 /**
  * Qin F22 has two physical soft keys above Call / End. They surface as

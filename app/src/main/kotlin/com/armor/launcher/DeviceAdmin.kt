@@ -11,6 +11,12 @@ import android.util.Log
 /**
  * Device Admin / Device Owner receiver. After `adb shell dpm set-device-owner`,
  * this component holds the privileged DPC role for the app.
+ *
+ * NOTE: this class lives at the **root** package (com.armor.launcher.DeviceAdmin)
+ * intentionally. The Device Owner record stored in /data/system/device_owner.xml
+ * is keyed by full class name; moving this class would invalidate that record on
+ * every device that already has DO set, and break the documented
+ * `adb shell dpm set-device-owner com.armor.launcher/.DeviceAdmin` workflow.
  */
 class DeviceAdmin : DeviceAdminReceiver() {
 

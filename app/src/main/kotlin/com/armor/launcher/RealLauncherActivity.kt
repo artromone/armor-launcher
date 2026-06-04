@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.armor.launcher.domain.HiddenAppsManager
+import com.armor.launcher.platform.Dpm
 
 /**
  * Real-mode launcher — shows every launchable app on the device, including

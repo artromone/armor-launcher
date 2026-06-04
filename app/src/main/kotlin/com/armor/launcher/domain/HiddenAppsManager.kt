@@ -1,7 +1,9 @@
-package com.armor.launcher
+package com.armor.launcher.domain
 
 import android.content.Context
 import androidx.core.content.edit
+import com.armor.launcher.platform.Dpm
+import com.armor.launcher.platform.Prefs
 
 /**
  * Tracks which packages the user has marked as hidden and reflects that

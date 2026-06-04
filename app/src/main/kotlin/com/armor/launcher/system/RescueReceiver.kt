@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.system
 
 import android.app.ActivityManager
 import android.app.admin.DevicePolicyManager
@@ -6,6 +6,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.armor.launcher.DeviceAdmin
+import com.armor.launcher.domain.HiddenAppsManager
+import com.armor.launcher.domain.KioskState
 
 /**
  * Dev escape hatch:

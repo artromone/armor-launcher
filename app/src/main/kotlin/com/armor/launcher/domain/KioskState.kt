@@ -1,7 +1,8 @@
-package com.armor.launcher
+package com.armor.launcher.domain
 
 import android.content.Context
 import androidx.core.content.edit
+import com.armor.launcher.platform.Prefs
 
 object KioskState {
     fun isEnabled(ctx: Context): Boolean =

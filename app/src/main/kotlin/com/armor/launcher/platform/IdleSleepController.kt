@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.app.Activity
 import android.os.Handler
@@ -6,6 +6,7 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import com.armor.launcher.domain.PowerPrefs
 
 /**
  * Owns the idle-screen lifecycle: dim → off → lockNow.

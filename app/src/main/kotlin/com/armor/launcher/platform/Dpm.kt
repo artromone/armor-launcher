@@ -1,9 +1,10 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.util.Log
+import com.armor.launcher.DeviceAdmin
 
 /**
  * Thin DevicePolicyManager facade. Every call site previously had its own

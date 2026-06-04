@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.app.Activity
 import android.content.BroadcastReceiver
@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.core.content.edit
+import com.armor.launcher.LockActivity
+import com.armor.launcher.domain.PinManager
 
 /**
  * Coordinates the "screen turned off → next foregrounding must show LockActivity"

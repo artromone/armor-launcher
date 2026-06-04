@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.system
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -6,6 +6,9 @@ import android.content.Intent
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import com.armor.launcher.DisguiseActivity
+import com.armor.launcher.LockActivity
+import com.armor.launcher.domain.PinManager
 
 /**
  * Brings Armor to the foreground after device boot. Without Armor being the

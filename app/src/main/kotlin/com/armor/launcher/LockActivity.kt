@@ -7,6 +7,9 @@ import android.os.Looper
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.TextView
+import com.armor.launcher.domain.PinManager
+import com.armor.launcher.platform.Intents
+import com.armor.launcher.platform.KeyCodes
 
 /**
  * Feature-phone style PIN unlock. Replaces the system keyguard

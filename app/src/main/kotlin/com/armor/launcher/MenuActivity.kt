@@ -10,6 +10,8 @@ import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import com.armor.launcher.domain.AppCatalog
+import com.armor.launcher.domain.AppEntry
 
 class MenuActivity : BaseDisguiseActivity() {
 

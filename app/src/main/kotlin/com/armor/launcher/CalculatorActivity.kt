@@ -3,6 +3,7 @@ package com.armor.launcher
 import android.os.Bundle
 import android.view.KeyEvent
 import android.widget.TextView
+import com.armor.launcher.platform.KeyCodes
 
 class CalculatorActivity : BaseDisguiseActivity() {
 

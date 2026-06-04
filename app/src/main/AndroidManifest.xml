@@ -97,7 +97,7 @@
         </receiver>
 
         <receiver
-            android:name=".BootReceiver"
+            android:name=".system.BootReceiver"
             android:exported="true"
             android:directBootAware="true">
             <intent-filter android:priority="999">
@@ -110,7 +110,7 @@
         </receiver>
 
         <receiver
-            android:name=".RescueReceiver"
+            android:name=".system.RescueReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="com.armor.launcher.EXIT_KIOSK" />

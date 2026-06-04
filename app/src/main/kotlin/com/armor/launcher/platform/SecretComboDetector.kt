@@ -1,10 +1,11 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.view.KeyEvent
+import com.armor.launcher.domain.PinManager
 
 /**
  * Real-mode unlock combo. Two-stage state machine driven by KEY_DOWN events:

@@ -1,4 +1,4 @@
-package com.armor.launcher
+package com.armor.launcher.platform
 
 import android.content.Context
 import android.content.SharedPreferences

@@ -7,6 +7,15 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.TextView
+import com.armor.launcher.platform.ClockTicker
+import com.armor.launcher.platform.EmergencyLockDetector
+import com.armor.launcher.platform.IdleSleepController
+import com.armor.launcher.platform.Intents
+import com.armor.launcher.platform.LockGate
+import com.armor.launcher.platform.RealMode
+import com.armor.launcher.platform.SecretComboDetector
+import com.armor.launcher.platform.SoftKeys
+import com.armor.launcher.platform.SystemBarsController
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
