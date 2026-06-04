@@ -31,7 +31,12 @@ class MenuActivity : BaseDisguiseActivity() {
             // focus between focusable views; we just listen for those changes
             // and update both the highlight and our `selected` index.
             cell.isFocusable = true
-            cell.isFocusableInTouchMode = false
+            // Keep focus across touch-mode switches. ViewRootImpl flips into
+            // touch-mode the instant any touch reaches the window (before our
+            // dispatchTouchEvent can swallow it) and would otherwise clear
+            // focus from views with focusableInTouchMode=false — meaning a
+            // stray finger on the screen made the D-pad highlight disappear.
+            cell.isFocusableInTouchMode = true
             cell.setOnClickListener { open(entry) }
             cell.setOnFocusChangeListener { v, hasFocus ->
                 v.setBackgroundResource(if (hasFocus) R.drawable.bg_item_selected else 0)
