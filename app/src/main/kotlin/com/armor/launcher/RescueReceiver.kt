@@ -49,6 +49,12 @@ class RescueReceiver : BroadcastReceiver() {
                 Log.w(TAG, "setKeyguardDisabled(false) failed", e)
             }
             try {
+                dpm.setStatusBarDisabled(admin, false)
+                Log.i(TAG, "Status bar re-enabled")
+            } catch (e: Exception) {
+                Log.w(TAG, "setStatusBarDisabled(false) failed", e)
+            }
+            try {
                 // Drop our default-HOME claim BEFORE removing DO, otherwise the
                 // mapping persists with no owner and the system keeps routing
                 // HOME intents to a now-unprivileged Armor.

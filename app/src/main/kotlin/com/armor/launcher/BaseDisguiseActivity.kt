@@ -1,7 +1,6 @@
 package com.armor.launcher
 
 import android.app.Activity
-import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,14 +8,12 @@ import android.content.IntentFilter
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.TextView
-import android.widget.Toast
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -29,12 +26,14 @@ import androidx.core.content.edit
  * Common scaffolding shared by every disguise screen:
  *  - fullscreen / immersive
  *  - clock in title bar auto-updates on TIME_TICK
- *  - panic combo (5× '*' in 3s) → disarm
  *  - swallow home/recents keys (back is handled per subclass)
+ *  - hardware soft-key dispatch to btn_left / btn_right
+ *
+ * No in-app disarm/panic. The only escape is the ADB rescue broadcast
+ * (RescueReceiver), kept as a dev-side safety net.
  */
 abstract class BaseDisguiseActivity : Activity() {
 
-    private val starPresses = ArrayDeque<Long>()
     private val clockFmt = SimpleDateFormat("HH:mm", Locale.US)
 
     private val timeTick = object : BroadcastReceiver() {
@@ -256,12 +255,9 @@ abstract class BaseDisguiseActivity : Activity() {
         findViewById<TextView?>(R.id.tv_title)?.text = text
     }
 
-    // ---------- Panic combo + key handling -----------------------------------
+    // ---------- Key handling -------------------------------------------------
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_STAR) {
-            if (handleStarPress()) return true
-        }
         // Qin F22 physical soft keys (the two above Call/End):
         //   left → SOFT_LEFT or MENU   → click btn_left
         //   right → SOFT_RIGHT or BACK → click btn_right
@@ -288,54 +284,7 @@ abstract class BaseDisguiseActivity : Activity() {
         return v.performClick()
     }
 
-    /** Returns true if this press completed the panic sequence (consume). */
-    private fun handleStarPress(): Boolean {
-        val now = SystemClock.uptimeMillis()
-        starPresses.addLast(now)
-        while (starPresses.isNotEmpty() && now - starPresses.first() > PANIC_WINDOW_MS) {
-            starPresses.removeFirst()
-        }
-        if (starPresses.size >= PANIC_PRESSES) {
-            starPresses.clear()
-            val report = disarm()
-            Toast.makeText(this, "PANIC: $report", Toast.LENGTH_LONG).show()
-            finishAndRemoveTask()
-            return true
-        }
-        return false // let star propagate normally if it wasn't the trigger
-    }
-
-    private fun disarm(): String {
-        val dpm = getSystemService(DevicePolicyManager::class.java) ?: return "no DPM"
-        val admin = DeviceAdmin.componentName(this)
-        val log = StringBuilder()
-        try { stopLockTask() } catch (_: Exception) {}
-        if (dpm.isDeviceOwnerApp(packageName)) {
-            try { HiddenAppsManager(this).showAll(); log.append("shown • ") }
-            catch (e: Exception) { log.append("show err • ") }
-            try { dpm.setStatusBarDisabled(admin, false); log.append("SB • ") }
-            catch (e: Exception) { log.append("SB err • ") }
-            try { dpm.setKeyguardDisabled(admin, false); log.append("KG • ") }
-            catch (e: Exception) { log.append("KG err • ") }
-            try {
-                dpm.clearPackagePersistentPreferredActivities(admin, packageName)
-                log.append("HOME • ")
-            } catch (e: Exception) { log.append("HOME err • ") }
-            try {
-                @Suppress("DEPRECATION")
-                dpm.clearDeviceOwnerApp(packageName); log.append("DO • ")
-            } catch (e: Exception) { log.append("DO err • ") }
-        }
-        if (dpm.isAdminActive(admin)) {
-            try { dpm.removeActiveAdmin(admin); log.append("admin") }
-            catch (e: Exception) { log.append("adm err") }
-        }
-        return log.toString()
-    }
-
     companion object {
-        private const val PANIC_PRESSES = 5
-        private const val PANIC_WINDOW_MS = 3_000L
         private const val PREFS_LOCK_STATE = "armor_lock_state"
         private const val KEY_LOCKED = "needs_lock"
         private const val DIM_LEAD_MS = 5_000L

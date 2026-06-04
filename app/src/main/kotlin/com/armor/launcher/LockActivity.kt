@@ -80,6 +80,8 @@ class LockActivity : BaseDisguiseActivity() {
         }
         val d = digitOf(keyCode)
         if (d != null) {
+            // Fresh input — clear any stale "Incorrect PIN" notice.
+            if (entered.isEmpty()) statusView.text = ""
             if (entered.length < pinManager.pinLength()) entered.append(d)
             if (entered.length == pinManager.pinLength()) tryUnlock()
             render()
@@ -140,9 +142,6 @@ class LockActivity : BaseDisguiseActivity() {
         pinView.text = buildString {
             repeat(filled) { append('●') }
             repeat(total - filled) { append('○') }
-        }
-        if (!pinManager.isLockedOut() && statusView.text.isNullOrEmpty().not() && filled == 0) {
-            // keep error visible until the user starts typing again
         }
         promptView.text = "Enter PIN"
     }
