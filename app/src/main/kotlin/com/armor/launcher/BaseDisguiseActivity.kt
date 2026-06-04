@@ -128,6 +128,7 @@ abstract class BaseDisguiseActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
+        if (event != null) trackEmergencyLock(event)
         if (event?.action == KeyEvent.ACTION_DOWN) {
             onUserInteraction()
             // Real-mode unlock combo runs pre-routing so it works on every
@@ -136,6 +137,33 @@ abstract class BaseDisguiseActivity : Activity() {
             if (handleSecretCombo(event.keyCode, event)) return true
         }
         return super.dispatchKeyEvent(event)
+    }
+
+    // ---------- Emergency lock: 2+5 held together for 2s --------------------
+    private val emergencyHandler = Handler(Looper.getMainLooper())
+    private var key2Down = false
+    private var key5Down = false
+    private val emergencyRunnable = Runnable {
+        RealMode.lock()
+        android.widget.Toast.makeText(
+            this, "DISGUISE", android.widget.Toast.LENGTH_SHORT
+        ).show()
+        startActivity(Intent(this, DisguiseActivity::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        })
+    }
+
+    private fun trackEmergencyLock(event: KeyEvent) {
+        val down = event.action == KeyEvent.ACTION_DOWN
+        when (event.keyCode) {
+            KeyEvent.KEYCODE_2 -> key2Down = down
+            KeyEvent.KEYCODE_5 -> key5Down = down
+            else -> return
+        }
+        emergencyHandler.removeCallbacks(emergencyRunnable)
+        if (key2Down && key5Down) {
+            emergencyHandler.postDelayed(emergencyRunnable, EMERGENCY_HOLD_MS)
+        }
     }
 
     override fun onUserInteraction() {
@@ -371,5 +399,6 @@ abstract class BaseDisguiseActivity : Activity() {
         private const val STAR_PRESSES = 5
         private const val STAR_WINDOW_MS = 3_000L
         private const val SECRET_WINDOW_MS = 5_000L
+        private const val EMERGENCY_HOLD_MS = 2_000L
     }
 }
