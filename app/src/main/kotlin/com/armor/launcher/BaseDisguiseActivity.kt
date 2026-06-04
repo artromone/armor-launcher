@@ -43,6 +43,7 @@ abstract class BaseDisguiseActivity : Activity() {
 
     private val screenOff = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, i: Intent?) {
+            RealMode.lock()
             if (PinManager.forPin(this@BaseDisguiseActivity).isSet()) {
                 getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
                     .edit()
@@ -192,6 +193,7 @@ abstract class BaseDisguiseActivity : Activity() {
     private fun goToSleep() {
         // Restore brightness first so when the screen turns back on it's not stuck dim.
         restoreBrightness()
+        RealMode.lock()
         // Set the lock flag directly before lockNow(). Don't rely on
         // ACTION_SCREEN_OFF — onStop() may unregister the receiver before the
         // broadcast is delivered, which would leave us unlocked on next wake.

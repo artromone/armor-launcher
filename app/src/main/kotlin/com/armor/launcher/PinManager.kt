@@ -103,8 +103,18 @@ class PinManager(context: Context, prefsName: String = "armor_pin") {
         /** Factory for the unlock-PIN (used by LockActivity). */
         fun forPin(c: Context) = PinManager(c, "armor_pin")
 
-        /** Factory for the secret code that toggles Real mode. */
-        fun forSecret(c: Context) = PinManager(c, "armor_secret")
+        /**
+         * Factory for the secret code that toggles Real mode.
+         * Seeds a default of "1234" on first access so a fresh install still
+         * has a way into Real mode without any prior setup.
+         */
+        fun forSecret(c: Context): PinManager {
+            val m = PinManager(c, "armor_secret")
+            if (!m.isSet()) m.setPin(DEFAULT_SECRET)
+            return m
+        }
+
+        private const val DEFAULT_SECRET = "1234"
 
         private const val KEY_HASH = "hash"
         private const val KEY_SALT = "salt"

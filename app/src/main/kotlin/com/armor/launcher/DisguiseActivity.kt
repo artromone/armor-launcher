@@ -144,6 +144,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
                     secretBuf.clear()
                     handler.removeCallbacks(secretTimeout)
                     if (ok) {
+                        RealMode.unlock()
                         startActivity(Intent(this, RealLauncherActivity::class.java))
                     }
                 }

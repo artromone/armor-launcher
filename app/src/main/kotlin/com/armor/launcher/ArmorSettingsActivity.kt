@@ -19,6 +19,8 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
         setTitleText("Settings")
 
         val container = findViewById<LinearLayout>(R.id.rows_container)
+
+        // ----- Always visible: looks like a stock feature phone -----
         addRow(container, pinRowLabel()) {
             startActivity(Intent(this, PinSetupActivity::class.java))
         }
@@ -28,40 +30,50 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
                 recreate()
             }
         }
-        addRow(container, secretRowLabel()) {
-            startActivity(Intent(this, PinSetupActivity::class.java).apply {
-                putExtra(PinSetupActivity.EXTRA_SECRET, true)
-            })
-        }
-        if (PinManager.forSecret(this).isSet()) {
-            addRow(container, "Remove Secret Code") {
-                PinManager.forSecret(this).clearPin()
-                recreate()
-            }
-        }
         val power = PowerPrefs(this)
         addRow(container, "Screen off after: ${PowerPrefs.label(power.offAfterMs)}") {
             power.offAfterMs = PowerPrefs.next(power.offAfterMs, PowerPrefs.OFF_OPTIONS)
             recreate()
         }
-        addRow(container, "Hidden Apps") {
-            startActivity(Intent(this, HiddenAppsActivity::class.java))
-        }
-        addRow(container, "Hide recommended set") {
-            val applied = HiddenAppsManager(this).hideRecommended()
-            android.widget.Toast.makeText(
-                this,
-                "Hidden ${applied.size} package(s)",
-                android.widget.Toast.LENGTH_SHORT
-            ).show()
-        }
-        addRow(container, "Open Real Mode") {
-            startActivity(Intent(this, RealLauncherActivity::class.java))
-        }
-        addRow(container, "System Settings") {
-            startActivity(Intent(Settings.ACTION_SETTINGS).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            })
+
+        // ----- Real-mode-only: revealed after 5×'*' + secret code -----
+        if (RealMode.unlocked) {
+            addRow(container, "Change Secret Code") {
+                startActivity(Intent(this, PinSetupActivity::class.java).apply {
+                    putExtra(PinSetupActivity.EXTRA_SECRET, true)
+                })
+            }
+            addRow(container, "Reset Secret Code to default") {
+                PinManager.forSecret(this).clearPin()
+                // forSecret() re-seeds "1234" on next access.
+                PinManager.forSecret(this)
+                android.widget.Toast.makeText(
+                    this, "Secret reset to 1234", android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+            addRow(container, "Hidden Apps") {
+                startActivity(Intent(this, HiddenAppsActivity::class.java))
+            }
+            addRow(container, "Hide recommended set") {
+                val applied = HiddenAppsManager(this).hideRecommended()
+                android.widget.Toast.makeText(
+                    this,
+                    "Hidden ${applied.size} package(s)",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            }
+            addRow(container, "Open Real Mode") {
+                startActivity(Intent(this, RealLauncherActivity::class.java))
+            }
+            addRow(container, "System Settings") {
+                startActivity(Intent(Settings.ACTION_SETTINGS).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                })
+            }
+            addRow(container, "Lock Real Mode now") {
+                RealMode.lock()
+                recreate()
+            }
         }
         if (rows.isNotEmpty()) rows.first().post { rows.first().requestFocus() }
 
@@ -71,9 +83,6 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
 
     private fun pinRowLabel(): String =
         if (PinManager.forPin(this).isSet()) "Change PIN" else "Set PIN"
-
-    private fun secretRowLabel(): String =
-        if (PinManager.forSecret(this).isSet()) "Change Secret Code" else "Set Secret Code"
 
     private fun addRow(container: LinearLayout, label: String, onClick: () -> Unit) {
         val tv = TextView(this).apply {
