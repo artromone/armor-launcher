@@ -10,6 +10,7 @@ import android.os.BatteryManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Log
 import android.view.KeyEvent
 import android.view.WindowManager
@@ -108,22 +109,16 @@ class DisguiseActivity : BaseDisguiseActivity() {
         try { unregisterReceiver(batteryReceiver) } catch (_: Exception) {}
     }
 
-    // ---------- Secret combo: long-press 5 → digits → Real mode --------------
+    // ---------- Secret combo: 5×'*' in 3s → digits → Real mode --------------
 
     private val handler = Handler(Looper.getMainLooper())
     private var awaitingSecret = false
     private val secretBuf = StringBuilder()
-    private val longPress5Trigger = Runnable {
-        awaitingSecret = true
-        // Reset window
-        handler.removeCallbacks(secretTimeout)
-        handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
-        secretBuf.clear()
-        // No visible UI feedback — stays plausibly indistinguishable from a stuck key.
-    }
+    private val starPresses = ArrayDeque<Long>()
     private val secretTimeout = Runnable {
         awaitingSecret = false
         secretBuf.clear()
+        starPresses.clear()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -152,10 +147,21 @@ class DisguiseActivity : BaseDisguiseActivity() {
             }
         }
 
-        // Long-press '5' starts secret-input mode after 3 s.
-        if (keyCode == KeyEvent.KEYCODE_5 && event?.repeatCount == 0 && !awaitingSecret) {
-            handler.removeCallbacks(longPress5Trigger)
-            handler.postDelayed(longPress5Trigger, LONG_PRESS_MS)
+        // 5×'*' in 3 s starts secret-input mode.
+        if (keyCode == KeyEvent.KEYCODE_STAR && event?.repeatCount == 0) {
+            val now = SystemClock.uptimeMillis()
+            starPresses.addLast(now)
+            while (starPresses.isNotEmpty() && now - starPresses.first() > STAR_WINDOW_MS) {
+                starPresses.removeFirst()
+            }
+            if (starPresses.size >= STAR_PRESSES) {
+                starPresses.clear()
+                awaitingSecret = true
+                secretBuf.clear()
+                handler.removeCallbacks(secretTimeout)
+                handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
+            }
+            return true
         }
 
         when (keyCode) {
@@ -165,13 +171,6 @@ class DisguiseActivity : BaseDisguiseActivity() {
             // BACK falls through to Base → clicks btn_right ("Contacts").
         }
         return super.onKeyDown(keyCode, event)
-    }
-
-    override fun onKeyUp(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_5) {
-            handler.removeCallbacks(longPress5Trigger)
-        }
-        return super.onKeyUp(keyCode, event)
     }
 
     private fun digitOf(keyCode: Int): Char? = when (keyCode) {
@@ -229,7 +228,8 @@ class DisguiseActivity : BaseDisguiseActivity() {
     companion object {
         private const val TAG = "ArmorDisguise"
         const val EXTRA_FROM_LOCK = "from_lock"
-        private const val LONG_PRESS_MS = 3_000L
+        private const val STAR_PRESSES = 5
+        private const val STAR_WINDOW_MS = 3_000L
         private const val SECRET_WINDOW_MS = 5_000L
     }
 }
