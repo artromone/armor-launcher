@@ -127,7 +127,20 @@ abstract class BaseDisguiseActivity : Activity() {
     }
 
     override fun dispatchKeyEvent(event: KeyEvent?): Boolean {
-        if (event?.action == KeyEvent.ACTION_DOWN) onUserInteraction()
+        if (event?.action == KeyEvent.ACTION_DOWN) {
+            onUserInteraction()
+            // DEBUG: surface every key on every screen, regardless of who
+            // ultimately consumes it. Tells us:
+            //   - is the new APK actually installed (panic was removed; if
+            //     you still see PANIC behaviour, build cache is stale)
+            //   - does '*' emit KEYCODE_STAR (17) on Qin F22 or something else
+            val code = event.keyCode
+            android.widget.Toast.makeText(
+                this,
+                "${javaClass.simpleName} key=$code (${KeyEvent.keyCodeToString(code)}) RM=${RealMode.unlocked}",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
         return super.dispatchKeyEvent(event)
     }
 
