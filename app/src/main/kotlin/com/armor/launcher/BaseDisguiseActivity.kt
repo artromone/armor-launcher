@@ -134,11 +134,15 @@ abstract class BaseDisguiseActivity : Activity() {
         idleHandler.removeCallbacks(dimRunnable)
         idleHandler.removeCallbacks(offRunnable)
         val prefs = PowerPrefs(this)
-        if (prefs.dimAfterMs != PowerPrefs.NEVER) {
-            idleHandler.postDelayed(dimRunnable, prefs.dimAfterMs)
+        val dim = prefs.dimAfterMs
+        val off = prefs.offAfterMs
+        // Only schedule dim if it'd actually fire before off — otherwise it'd
+        // apply on an already-asleep window and survive into the next wake.
+        if (dim != PowerPrefs.NEVER && (off == PowerPrefs.NEVER || dim < off)) {
+            idleHandler.postDelayed(dimRunnable, dim)
         }
-        if (prefs.offAfterMs != PowerPrefs.NEVER) {
-            idleHandler.postDelayed(offRunnable, prefs.offAfterMs)
+        if (off != PowerPrefs.NEVER) {
+            idleHandler.postDelayed(offRunnable, off)
         }
     }
 
@@ -160,6 +164,15 @@ abstract class BaseDisguiseActivity : Activity() {
     private fun goToSleep() {
         // Restore brightness first so when the screen turns back on it's not stuck dim.
         restoreBrightness()
+        // Set the lock flag directly before lockNow(). Don't rely on
+        // ACTION_SCREEN_OFF — onStop() may unregister the receiver before the
+        // broadcast is delivered, which would leave us unlocked on next wake.
+        if (PinManager.forPin(this).isSet()) {
+            getSharedPreferences(PREFS_LOCK_STATE, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_LOCKED, true)
+                .apply()
+        }
         try {
             val dpm = getSystemService(DevicePolicyManager::class.java)
             if (dpm?.isAdminActive(DeviceAdmin.componentName(this)) == true) {
