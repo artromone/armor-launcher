@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.view.WindowManager
 import android.widget.TextView
+import android.widget.Toast
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -122,11 +123,16 @@ class DisguiseActivity : BaseDisguiseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // DEBUG: see exactly what the Qin F22 keypad sends.
+        Log.i(TAG, "onKeyDown code=$keyCode name=${KeyEvent.keyCodeToString(keyCode)} repeat=${event?.repeatCount}")
+        Toast.makeText(this, "key=$keyCode (${KeyEvent.keyCodeToString(keyCode)})", Toast.LENGTH_SHORT).show()
+
         // Secret-input mode swallows digits and watches for a match.
         if (awaitingSecret) {
             val d = digitOf(keyCode)
             if (d != null) {
                 secretBuf.append(d)
+                Toast.makeText(this, "secret: ${secretBuf} (need len=${PinManager.forSecret(this).pinLength()})", Toast.LENGTH_SHORT).show()
                 // Slide the timeout window forward on each press
                 handler.removeCallbacks(secretTimeout)
                 handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
@@ -138,6 +144,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
                     awaitingSecret = false
                     secretBuf.clear()
                     handler.removeCallbacks(secretTimeout)
+                    Toast.makeText(this, if (ok) "UNLOCK OK" else "WRONG CODE", Toast.LENGTH_LONG).show()
                     if (ok) {
                         RealMode.unlock()
                         startActivity(Intent(this, RealLauncherActivity::class.java))
@@ -154,12 +161,14 @@ class DisguiseActivity : BaseDisguiseActivity() {
             while (starPresses.isNotEmpty() && now - starPresses.first() > STAR_WINDOW_MS) {
                 starPresses.removeFirst()
             }
+            Toast.makeText(this, "star ${starPresses.size}/$STAR_PRESSES", Toast.LENGTH_SHORT).show()
             if (starPresses.size >= STAR_PRESSES) {
                 starPresses.clear()
                 awaitingSecret = true
                 secretBuf.clear()
                 handler.removeCallbacks(secretTimeout)
                 handler.postDelayed(secretTimeout, SECRET_WINDOW_MS)
+                Toast.makeText(this, "AWAITING SECRET (type ${PinManager.forSecret(this).pinLength()} digits)", Toast.LENGTH_LONG).show()
             }
             return true
         }
