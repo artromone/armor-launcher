@@ -1,8 +1,7 @@
 package com.armor.launcher
 
-import android.app.admin.DevicePolicyManager
 import android.content.Context
-import android.util.Log
+import androidx.core.content.edit
 
 /**
  * Tracks which packages the user has marked as hidden and reflects that
@@ -22,10 +21,10 @@ import android.util.Log
  */
 class HiddenAppsManager(private val context: Context) {
 
-    private val prefs = context.getSharedPreferences("armor_hidden", Context.MODE_PRIVATE)
+    private val prefs = Prefs.hidden(context)
 
     fun hiddenPackages(): Set<String> =
-        prefs.getStringSet(KEY_HIDDEN, emptySet()) ?: emptySet()
+        prefs.getStringSet(Prefs.KEY_HIDDEN_PKGS, emptySet()) ?: emptySet()
 
     fun isHidden(pkg: String): Boolean = hiddenPackages().contains(pkg)
 
@@ -39,44 +38,33 @@ class HiddenAppsManager(private val context: Context) {
 
         val current = hiddenPackages().toMutableSet()
         if (hidden) current.add(pkg) else current.remove(pkg)
-        prefs.edit().putStringSet(KEY_HIDDEN, current).apply()
+        prefs.edit { putStringSet(Prefs.KEY_HIDDEN_PKGS, current) }
 
-        val dpm = context.getSystemService(DevicePolicyManager::class.java)
-        if (dpm?.isDeviceOwnerApp(context.packageName) == true) {
-            val admin = DeviceAdmin.componentName(context)
-            return try {
-                dpm.setApplicationHidden(admin, pkg, hidden)
-            } catch (e: Exception) {
-                Log.w(TAG, "setApplicationHidden($pkg, $hidden) failed", e)
-                false
-            }
-        }
-        return true
+        if (!Dpm.isOurDeviceOwner(context)) return true
+        return Dpm.asOwner(context, "setApplicationHidden($pkg, $hidden)") { dpm, admin ->
+            dpm.setApplicationHidden(admin, pkg, hidden)
+        } ?: false
     }
 
     /** Apply stored state to DPM (call on boot and after install changes). */
     fun applyAll() {
-        val dpm = context.getSystemService(DevicePolicyManager::class.java) ?: return
-        if (!dpm.isDeviceOwnerApp(context.packageName)) return
-        val admin = DeviceAdmin.componentName(context)
-        val hidden = hiddenPackages()
-        for (pkg in hidden) {
-            try { dpm.setApplicationHidden(admin, pkg, true) }
-            catch (e: Exception) { Log.w(TAG, "apply hide $pkg failed", e) }
+        Dpm.asOwner(context, "applyAll hide") { dpm, admin ->
+            for (pkg in hiddenPackages()) {
+                try { dpm.setApplicationHidden(admin, pkg, true) }
+                catch (_: Exception) {}
+            }
         }
     }
 
     /** Clear all hidden state — useful in panic/disarm flow. */
     fun showAll() {
-        val dpm = context.getSystemService(DevicePolicyManager::class.java)
-        if (dpm?.isDeviceOwnerApp(context.packageName) == true) {
-            val admin = DeviceAdmin.componentName(context)
+        Dpm.asOwner(context, "showAll unhide") { dpm, admin ->
             for (pkg in hiddenPackages()) {
                 try { dpm.setApplicationHidden(admin, pkg, false) }
-                catch (e: Exception) { Log.w(TAG, "unhide $pkg failed", e) }
+                catch (_: Exception) {}
             }
         }
-        prefs.edit().remove(KEY_HIDDEN).apply()
+        prefs.edit { remove(Prefs.KEY_HIDDEN_PKGS) }
     }
 
     /**
@@ -98,9 +86,6 @@ class HiddenAppsManager(private val context: Context) {
     }
 
     companion object {
-        private const val KEY_HIDDEN = "hidden_pkgs"
-        private const val TAG = "ArmorHidden"
-
         /**
          * Packages that obviously hint at a connected smartphone and should
          * vanish by default for the disguise. The user can toggle individually

@@ -48,6 +48,8 @@ class BootReceiver : BroadcastReceiver() {
             } else {
                 DisguiseActivity::class.java
             }
+            // Boot uses CLEAR_TOP (not CLEAR_TASK like Intents.clearTopHome) so
+            // we don't wipe a freshly-staged task from a quick reboot loop.
             val launch = Intent(context, target).apply {
                 addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or

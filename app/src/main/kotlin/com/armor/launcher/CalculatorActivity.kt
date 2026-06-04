@@ -26,20 +26,11 @@ class CalculatorActivity : BaseDisguiseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        val digit = when (keyCode) {
-            KeyEvent.KEYCODE_0 -> '0'; KeyEvent.KEYCODE_1 -> '1'
-            KeyEvent.KEYCODE_2 -> '2'; KeyEvent.KEYCODE_3 -> '3'
-            KeyEvent.KEYCODE_4 -> '4'; KeyEvent.KEYCODE_5 -> '5'
-            KeyEvent.KEYCODE_6 -> '6'; KeyEvent.KEYCODE_7 -> '7'
-            KeyEvent.KEYCODE_8 -> '8'; KeyEvent.KEYCODE_9 -> '9'
-            else -> null
-        }
-        if (digit != null) { pushDigit(digit); return true }
-
+        KeyCodes.digitOf(keyCode)?.let { pushDigit(it); return true }
         when (keyCode) {
             KeyEvent.KEYCODE_POUND -> { applyOp('+'); return true }
             KeyEvent.KEYCODE_STAR -> {
-                // Star is reserved for panic combo — let base handle it.
+                // Star is reserved for the Real-mode unlock combo — let base handle it.
                 return super.onKeyDown(keyCode, event)
             }
             KeyEvent.KEYCODE_DPAD_UP -> { applyOp('/'); return true }
@@ -52,10 +43,8 @@ class CalculatorActivity : BaseDisguiseActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-    // Bit hacky: KEYCODE_STAR is also "-" per the layout label. The panic-combo
-    // BaseDisguiseActivity consumes only when reaching 5 stars; here we'd want
-    // single press to mean "minus". Given that conflict, we expose minus via
-    // D-pad LEFT instead and let STAR go to panic only.
+    // KEYCODE_STAR is reserved for the global Real-mode unlock combo, so
+    // minus is exposed via D-pad LEFT instead of '*'.
 
     private fun pushDigit(d: Char) {
         if (justEvaluated) { input = "0"; justEvaluated = false }

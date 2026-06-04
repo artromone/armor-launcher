@@ -102,14 +102,7 @@ class LockActivity : BaseDisguiseActivity() {
         return super.onKeyDown(keyCode, event)
     }
 
-    private fun digitOf(keyCode: Int): Char? = when (keyCode) {
-        KeyEvent.KEYCODE_0 -> '0'; KeyEvent.KEYCODE_1 -> '1'
-        KeyEvent.KEYCODE_2 -> '2'; KeyEvent.KEYCODE_3 -> '3'
-        KeyEvent.KEYCODE_4 -> '4'; KeyEvent.KEYCODE_5 -> '5'
-        KeyEvent.KEYCODE_6 -> '6'; KeyEvent.KEYCODE_7 -> '7'
-        KeyEvent.KEYCODE_8 -> '8'; KeyEvent.KEYCODE_9 -> '9'
-        else -> null
-    }
+    private fun digitOf(keyCode: Int): Char? = KeyCodes.digitOf(keyCode)
 
     private fun tryUnlock() {
         val ok = pinManager.verify(entered.toString())
@@ -128,8 +121,7 @@ class LockActivity : BaseDisguiseActivity() {
     }
 
     private fun launchHome() {
-        startActivity(Intent(this, DisguiseActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        startActivity(Intents.clearTopHome(this, DisguiseActivity::class.java).apply {
             putExtra(DisguiseActivity.EXTRA_FROM_LOCK, true)
         })
         finishAndRemoveTask()

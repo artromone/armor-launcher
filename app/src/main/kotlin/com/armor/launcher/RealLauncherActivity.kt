@@ -26,13 +26,10 @@ class RealLauncherActivity : BaseDisguiseActivity() {
         setTitleText("All Apps")
 
         // Temporarily reveal hidden apps so we (and the user) can launch them.
-        hidden.hiddenPackages().forEach { pkg ->
-            try {
-                val dpm = getSystemService(android.app.admin.DevicePolicyManager::class.java)
-                if (dpm?.isDeviceOwnerApp(packageName) == true) {
-                    dpm.setApplicationHidden(DeviceAdmin.componentName(this), pkg, false)
-                }
-            } catch (_: Exception) {}
+        Dpm.asOwner(this, "unhide for RealLauncher") { dpm, admin ->
+            for (pkg in hidden.hiddenPackages()) {
+                try { dpm.setApplicationHidden(admin, pkg, false) } catch (_: Exception) {}
+            }
         }
 
         val container = findViewById<LinearLayout>(R.id.list_container)

@@ -1,19 +1,13 @@
 package com.armor.launcher
 
 import android.content.Context
+import androidx.core.content.edit
 
 object KioskState {
-    private const val PREFS = "armor_state"
-    private const val KEY_ENABLED = "kiosk_enabled"
-
     fun isEnabled(ctx: Context): Boolean =
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .getBoolean(KEY_ENABLED, true) // default ON
+        Prefs.kioskState(ctx).getBoolean(Prefs.KEY_KIOSK_ENABLED, true) // default ON
 
     fun setEnabled(ctx: Context, enabled: Boolean) {
-        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-            .edit()
-            .putBoolean(KEY_ENABLED, enabled)
-            .apply()
+        Prefs.kioskState(ctx).edit { putBoolean(Prefs.KEY_KIOSK_ENABLED, enabled) }
     }
 }

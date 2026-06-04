@@ -1,6 +1,5 @@
 package com.armor.launcher
 
-import android.app.admin.DevicePolicyManager
 import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
@@ -39,9 +38,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
         if (savedInstanceState == null && PinManager.forPin(this).isSet()
             && !intent.getBooleanExtra(EXTRA_FROM_LOCK, false)
         ) {
-            startActivity(Intent(this, LockActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-            })
+            startActivity(Intents.clearTopHome(this, LockActivity::class.java))
             finish()
             return
         }
@@ -117,10 +114,7 @@ class DisguiseActivity : BaseDisguiseActivity() {
     }
 
     private fun tryStartLockTask() {
-        val dpm = getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
-        if (!dpm.isDeviceOwnerApp(packageName)) return
-        val admin = DeviceAdmin.componentName(this)
-        try {
+        Dpm.asOwner(this, "tryStartLockTask") { dpm, admin ->
             dpm.addPersistentPreferredActivity(
                 admin,
                 IntentFilter(Intent.ACTION_MAIN).apply {
@@ -130,32 +124,21 @@ class DisguiseActivity : BaseDisguiseActivity() {
                 ComponentName(this, DisguiseActivity::class.java)
             )
 
-            // Kill the system keyguard entirely so there's no PIN screen and
-            // no swipe-down status bar gap between power-on and Armor.
-            // Fails silently if user still has a PIN/pattern/password set —
-            // they must remove it in Settings → Security → Screen lock → None
-            // first.
-            try {
-                val ok = dpm.setKeyguardDisabled(admin, true)
-                Log.i(TAG, "setKeyguardDisabled(true) returned $ok")
-            } catch (e: Exception) {
-                Log.w(TAG, "setKeyguardDisabled failed", e)
-            }
+            // Kill the system keyguard so there's no PIN screen and no
+            // swipe-down status bar gap between power-on and Armor. Fails
+            // silently if the user still has a PIN/pattern/password set —
+            // they must remove it in Settings → Security → Screen lock first.
+            runCatching { dpm.setKeyguardDisabled(admin, true) }
+                .onFailure { Log.w(TAG, "setKeyguardDisabled failed", it) }
 
             dpm.setLockTaskPackages(admin, AppCatalog.LOCK_TASK_WHITELIST)
             dpm.setLockTaskFeatures(admin, 0)
             startLockTask()
 
             // Kill the status-bar peek (swipe-down sliver). Requires Device
-            // Owner + active Lock Task. Returns true if SystemUI accepted.
-            try {
-                val ok = dpm.setStatusBarDisabled(admin, true)
-                Log.i(TAG, "setStatusBarDisabled(true) returned $ok")
-            } catch (e: Exception) {
-                Log.w(TAG, "setStatusBarDisabled failed", e)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Lock task start failed", e)
+            // Owner + active Lock Task.
+            runCatching { dpm.setStatusBarDisabled(admin, true) }
+                .onFailure { Log.w(TAG, "setStatusBarDisabled failed", it) }
         }
     }
 
