@@ -230,9 +230,11 @@ abstract class BaseDisguiseActivity : Activity() {
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
             )
         val c = WindowInsetsControllerCompat(window, window.decorView)
-        // BEHAVIOR_DEFAULT — no swipe-to-reveal peek; combined with
-        // setStatusBarDisabled() in Lock Task this fully suppresses the shade.
-        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+        // No swipe-to-reveal peek; SHOW_BARS_BY_TOUCH is the legacy alias for
+        // BEHAVIOR_DEFAULT in the androidx.core version we're pinned to (1.6.0).
+        // Do NOT "fix" this back to BEHAVIOR_DEFAULT — it's not in this release.
+        @Suppress("DEPRECATION")
+        c.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_BARS_BY_TOUCH
         c.hide(WindowInsetsCompat.Type.systemBars())
     }
 
