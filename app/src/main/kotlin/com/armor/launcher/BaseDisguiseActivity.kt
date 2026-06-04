@@ -66,8 +66,13 @@ abstract class BaseDisguiseActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Don't keep the screen on unconditionally — we want it to dim/sleep
-        // when the user idles. We manage that ourselves via idleHandler.
+        // KEEP_SCREEN_ON disables the *system* screen-off timer so only our
+        // own idleHandler controls when the screen dims/sleeps. Without this
+        // the system would honor Settings.System.SCREEN_OFF_TIMEOUT (often
+        // 30 s on Qin), which raced our timer and produced apparently-random
+        // lock prompts. Our own timer still fires goToSleep() → dpm.lockNow()
+        // when the user really has been idle for offAfterMs.
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         @Suppress("DEPRECATION")
         window.decorView.setOnSystemUiVisibilityChangeListener { vis ->
