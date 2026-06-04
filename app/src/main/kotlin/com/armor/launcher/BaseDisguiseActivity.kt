@@ -120,6 +120,9 @@ abstract class BaseDisguiseActivity : Activity() {
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         if (ev?.action == MotionEvent.ACTION_DOWN) onUserInteraction()
+        // Disguise = keypad-only. Swallow touches everywhere except on the
+        // lock screen (PIN entry stays tappable) and once Real mode is on.
+        if (!isLockScreen && !RealMode.unlocked) return true
         return super.dispatchTouchEvent(ev)
     }
 
