@@ -16,12 +16,15 @@ internal object Prefs {
     const val FILE_POWER = "armor_power"
     const val FILE_PIN = "armor_pin"
     const val FILE_SECRET = "armor_secret"
+    const val FILE_MRU = "armor_mru"
+    const val FILE_PINNED = "armor_pinned"
 
     // Keys (scoped by file via the constant name)
     const val KEY_NEEDS_LOCK = "needs_lock"
     const val KEY_KIOSK_ENABLED = "kiosk_enabled"
     const val KEY_HIDDEN_PKGS = "hidden_pkgs"
     const val KEY_OFF_AFTER_MS = "off_after_ms"
+    const val KEY_PINNED_CSV = "pinned_csv"
 
     fun lockState(c: Context): SharedPreferences =
         c.getSharedPreferences(FILE_LOCK_STATE, Context.MODE_PRIVATE)
