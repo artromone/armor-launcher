@@ -28,6 +28,7 @@ class LockActivity : BaseDisguiseActivity() {
 
     private val pinManager by lazy { PinManager.forPin(this) }
     private val entered = StringBuilder()
+    @Volatile private var verifying = false
 
     private lateinit var pinView: TextView
     private lateinit var statusView: TextView
@@ -76,18 +77,21 @@ class LockActivity : BaseDisguiseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Eat all keys while the background PBKDF2 verify is still running,
+        // otherwise queued digits would land in the next attempt.
+        if (verifying) return true
         if (pinManager.isLockedOut()) {
-            // Ignore digit input while locked out.
             renderLockoutCountdown()
             return true
         }
         val d = digitOf(keyCode)
         if (d != null) {
-            // Fresh input — clear any stale "Incorrect PIN" notice.
             if (entered.isEmpty()) statusView.text = ""
             if (entered.length < pinManager.pinLength()) entered.append(d)
-            if (entered.length == pinManager.pinLength()) tryUnlock()
+            // Render BEFORE kicking off verify so the last dot is painted on
+            // screen before we move to the "Checking…" state.
             render()
+            if (entered.length == pinManager.pinLength()) tryUnlock()
             return true
         }
         when (keyCode) {
@@ -108,19 +112,32 @@ class LockActivity : BaseDisguiseActivity() {
     private fun digitOf(keyCode: Int): Char? = KeyCodes.digitOf(keyCode)
 
     private fun tryUnlock() {
-        val ok = pinManager.verify(entered.toString())
+        // PBKDF2-HMAC-SHA256 at 50k iterations takes ~1-2 s on MT6739 — way
+        // too long to block the UI thread. Run it on a worker, show a brief
+        // "Checking…" hint, ignore further keys until done.
+        verifying = true
+        val candidate = entered.toString()
         entered.clear()
-        if (ok) {
-            launchHome()
-        } else {
-            render()
-            if (pinManager.isLockedOut()) {
-                renderLockoutCountdown()
-            } else {
-                val remaining = (5 - pinManager.failedAttempts()).coerceAtLeast(0)
-                statusView.text = "Incorrect PIN — $remaining left"
+        promptView.text = "Checking…"
+        Thread {
+            val ok = pinManager.verify(candidate)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                verifying = false
+                if (ok) {
+                    launchHome()
+                    return@runOnUiThread
+                }
+                promptView.text = "Enter PIN"
+                render()
+                if (pinManager.isLockedOut()) {
+                    renderLockoutCountdown()
+                } else {
+                    val remaining = (5 - pinManager.failedAttempts()).coerceAtLeast(0)
+                    statusView.text = "Incorrect PIN — $remaining left"
+                }
             }
-        }
+        }.start()
     }
 
     private fun launchHome() {

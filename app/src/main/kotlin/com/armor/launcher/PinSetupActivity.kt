@@ -31,6 +31,7 @@ class PinSetupActivity : BaseDisguiseActivity() {
     private enum class Stage { VERIFY_OLD, ENTER_NEW, CONFIRM_NEW }
     private var stage = Stage.ENTER_NEW
     private var newPin = ""
+    @Volatile private var busy = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,16 +51,19 @@ class PinSetupActivity : BaseDisguiseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        // Drop input while a background PBKDF2 verify/save is still running.
+        if (busy) return true
         val d = digitOf(keyCode)
         if (d != null) {
             if (entered.length < PinManager.MAX_LEN) entered.append(d)
-            // Auto-verify when length matches stored PIN length (verify-old stage)
+            // Paint the last dot before kicking off any PBKDF2 work, so the
+            // user sees their final keystroke land.
+            render()
             if (stage == Stage.VERIFY_OLD && entered.length == pinManager.pinLength()) {
                 checkOldPin()
             } else if (stage == Stage.CONFIRM_NEW && entered.length == newPin.length) {
                 confirm()
             }
-            render()
             return true
         }
         when (keyCode) {
@@ -103,29 +107,46 @@ class PinSetupActivity : BaseDisguiseActivity() {
     }
 
     private fun checkOldPin() {
-        val ok = pinManager.verify(entered.toString())
+        busy = true
+        val candidate = entered.toString()
         entered.clear()
-        if (ok) {
-            stage = Stage.ENTER_NEW
-            statusView.text = ""
-            renderPrompt()
-            render()
-        } else {
-            statusView.text = "Wrong PIN"
-            render()
-        }
+        statusView.text = "Checking…"
+        Thread {
+            val ok = pinManager.verify(candidate)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                busy = false
+                if (ok) {
+                    stage = Stage.ENTER_NEW
+                    statusView.text = ""
+                    renderPrompt()
+                } else {
+                    statusView.text = "Wrong PIN"
+                }
+                render()
+            }
+        }.start()
     }
 
     private fun confirm() {
-        if (entered.toString() == newPin) {
-            pinManager.setPin(newPin)
-            statusView.text = "Saved"
-            statusView.postDelayed({ finish() }, 600)
-        } else {
+        if (entered.toString() != newPin) {
             entered.clear()
             statusView.text = "Doesn't match — try again"
             render()
+            return
         }
+        busy = true
+        val pin = newPin
+        statusView.text = "Saving…"
+        Thread {
+            pinManager.setPin(pin)
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                busy = false
+                statusView.text = "Saved"
+                statusView.postDelayed({ if (!isFinishing) finish() }, 600)
+            }
+        }.start()
     }
 
     private fun renderPrompt() {
