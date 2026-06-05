@@ -76,9 +76,16 @@ class DisguiseActivity : BaseDisguiseActivity() {
         val emptyHint = findViewById<TextView>(R.id.pinned_empty)
         container.removeAllViews()
 
-        val installed = InstalledApps.list(this).associateBy { it.pkg }
-        pinned.prune(installed.keys)
-        val items = pinned.list().mapNotNull { installed[it] }
+        // Visible (non-DPM-hidden) apps that are currently launchable.
+        val visible = InstalledApps.list(this).associateBy { it.pkg }
+        // Packages the user has hidden are still installed — we just don't
+        // surface them on the disguise. Keep their pin in storage so it
+        // reactivates the moment they're un-hidden.
+        val hidden = HiddenAppsManager(this).hiddenPackages()
+        pinned.prune(visible.keys + hidden)
+        val items = pinned.list().mapNotNull { pkg ->
+            if (pkg in hidden) null else visible[pkg]
+        }
 
         if (items.isEmpty()) {
             emptyHint?.visibility = View.VISIBLE
