@@ -1,11 +1,8 @@
 package com.armor.launcher
 
-import android.content.BroadcastReceiver
 import android.content.ComponentName
-import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
@@ -31,20 +28,9 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
     private var tvTime: TextView? = null
     private var tvDate: TextView? = null
-    private var tvBatteryPct: TextView? = null
 
     private lateinit var pinned: PinnedAppsManager
     private lateinit var mru: MruTracker
-
-    private val batteryReceiver = object : BroadcastReceiver() {
-        override fun onReceive(c: Context?, i: Intent?) {
-            val level = i?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
-            val scale = i?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1
-            if (level >= 0 && scale > 0) {
-                tvBatteryPct?.text = "${level * 100 / scale}%"
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,7 +49,6 @@ class DisguiseActivity : BaseDisguiseActivity() {
         setContentView(R.layout.activity_disguise)
         tvTime = findViewById(R.id.tv_time)
         tvDate = findViewById(R.id.tv_date)
-        tvBatteryPct = findViewById(R.id.tv_battery_pct)
         pinned = PinnedAppsManager(this)
         mru = MruTracker(this)
 
@@ -120,30 +105,15 @@ class DisguiseActivity : BaseDisguiseActivity() {
     }
 
     override fun updateClock() {
+        // Status-bar tv_clock is handled by super; we additionally render the
+        // big home-screen clock + date below it.
+        super.updateClock()
         val now = Calendar.getInstance()
-        val hour24 = now.get(Calendar.HOUR_OF_DAY)
-        val minute = now.get(Calendar.MINUTE)
-        tvTime?.text = String.format(Locale.US, "%02d:%02d", hour24, minute)
-
-        val dateFmt = SimpleDateFormat("EEE dd.MM.yyyy", Locale.US)
-        tvDate?.text = dateFmt.format(now.time)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        val sticky = registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-        if (sticky != null) {
-            val level = sticky.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
-            val scale = sticky.getIntExtra(BatteryManager.EXTRA_SCALE, -1)
-            if (level >= 0 && scale > 0) {
-                tvBatteryPct?.text = "${level * 100 / scale}%"
-            }
-        }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        try { unregisterReceiver(batteryReceiver) } catch (_: Exception) {}
+        tvTime?.text = String.format(
+            Locale.US, "%02d:%02d",
+            now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE)
+        )
+        tvDate?.text = SimpleDateFormat("EEE dd.MM.yyyy", Locale.US).format(now.time)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {

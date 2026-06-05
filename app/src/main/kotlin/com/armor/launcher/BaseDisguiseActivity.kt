@@ -7,6 +7,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.TextView
+import com.armor.launcher.platform.BatteryWatcher
 import com.armor.launcher.platform.ClockTicker
 import com.armor.launcher.platform.EmergencyLockDetector
 import com.armor.launcher.platform.IdleSleepController
@@ -44,6 +45,7 @@ abstract class BaseDisguiseActivity : Activity() {
 
     private val systemBars = SystemBarsController(this)
     private val clockTicker = ClockTicker(this) { updateClock() }
+    private val batteryWatcher = BatteryWatcher(this)
     private val lockGate = LockGate(this)
     private val idleSleep = IdleSleepController(this) { lockGate.markLocked() }
     private val secretCombo = SecretComboDetector(this) {
@@ -67,6 +69,7 @@ abstract class BaseDisguiseActivity : Activity() {
     override fun onStart() {
         super.onStart()
         clockTicker.onStart()
+        batteryWatcher.onStart()
         lockGate.onStart()
         updateClock()
     }
@@ -74,6 +77,7 @@ abstract class BaseDisguiseActivity : Activity() {
     override fun onStop() {
         super.onStop()
         clockTicker.onStop()
+        batteryWatcher.onStop()
         lockGate.onStop()
     }
 

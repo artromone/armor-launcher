@@ -5,78 +5,39 @@
     android:orientation="vertical"
     android:background="#000000">
 
-    <!-- ================== STATUS BAR ================== -->
-    <RelativeLayout
-        android:id="@+id/status_bar"
+    <!--
+        Same unified status bar every other screen uses. Title is intentionally
+        left blank on home — the big clock block below takes over that role.
+    -->
+    <include layout="@layout/component_status_bar" />
+
+    <!-- ================== BIG CLOCK (home signature) ================== -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="92dp"
-        android:background="@drawable/bg_status_bar"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:paddingHorizontal="14dp"
-        android:paddingTop="6dp"
+        android:paddingTop="10dp"
         android:paddingBottom="6dp">
 
-        <!-- Time + date (left) -->
-        <LinearLayout
-            android:id="@+id/clock_block"
+        <TextView
+            android:id="@+id/tv_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentStart="true"
-            android:layout_centerVertical="true"
-            android:orientation="vertical">
+            android:textColor="#FFFFFF"
+            android:textSize="44sp"
+            android:textStyle="bold"
+            android:includeFontPadding="false"
+            android:fontFamily="sans-serif" />
 
-            <TextView
-                android:id="@+id/tv_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="02:06"
-                android:textColor="#FFFFFF"
-                android:textSize="36sp"
-                android:textStyle="bold"
-                android:includeFontPadding="false"
-                android:fontFamily="sans-serif" />
-
-            <TextView
-                android:id="@+id/tv_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tue 02.06.2026"
-                android:textColor="#D0D8E8"
-                android:textSize="14sp"
-                android:includeFontPadding="false" />
-        </LinearLayout>
-
-        <!-- WiFi + bell + battery (right) -->
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_date"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentEnd="true"
-            android:layout_alignParentTop="true"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:src="@drawable/ic_bell_muted"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:id="@+id/tv_battery_pct"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="--%"
-                android:textColor="#FFFFFF"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginEnd="4dp"
-                android:includeFontPadding="false" />
-
-            <ImageView
-                android:layout_width="22dp"
-                android:layout_height="28dp"
-                android:src="@drawable/ic_battery_bars" />
-        </LinearLayout>
-    </RelativeLayout>
+            android:textColor="#D0D8E8"
+            android:textSize="14sp"
+            android:includeFontPadding="false" />
+    </LinearLayout>
 
     <!-- ================== PINNED APPS ================== -->
     <LinearLayout
@@ -85,7 +46,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:paddingHorizontal="14dp"
-        android:paddingTop="12dp"
+        android:paddingTop="8dp"
         android:paddingBottom="6dp" />
 
     <TextView
@@ -132,34 +93,5 @@
         android:background="@drawable/bg_wallpaper" />
 
     <!-- ================== SOFT KEYS ================== -->
-    <LinearLayout
-        android:id="@+id/soft_keys"
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:orientation="horizontal"
-        android:background="@drawable/bg_soft_keys"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="14dp">
-
-        <TextView
-            android:id="@+id/btn_left"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Menu"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:id="@+id/btn_right"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Gallery"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:gravity="end" />
-    </LinearLayout>
+    <include layout="@layout/component_soft_keys" />
 </LinearLayout>
