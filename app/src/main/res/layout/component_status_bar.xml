@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Unified status bar shared by every screen in Armor. Retro feature-phone
-    chrome: title on the left, ringer + clock + battery on the right.
+    Unified status bar shared by every screen in Armor. Feature-phone chrome:
+    clock left, title middle, battery right.
 
-    Required ids (handled by BaseDisguiseActivity / sub-activities):
-      @id/tv_title         — screen name (set via setTitleText)
+    Required ids:
       @id/tv_clock         — HH:mm, ticked once a minute by ClockTicker
+      @id/tv_title         — screen name (set via setTitleText; blank on home)
       @id/tv_battery_pct   — battery %, updated by BatteryWatcher
-
-    Height intentionally compact (40dp) so the home screen still has room
-    for its own big-clock block underneath.
 -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -19,17 +16,16 @@
     android:paddingHorizontal="12dp">
 
     <TextView
-        android:id="@+id/tv_title"
+        android:id="@+id/tv_clock"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_centerVertical="true"
         android:textColor="#FFFFFF"
-        android:textSize="18sp"
+        android:textSize="14sp"
         android:textStyle="bold"
         android:includeFontPadding="false"
-        android:singleLine="true"
-        tools:text="Menu" />
+        tools:text="02:06" />
 
     <LinearLayout
         android:layout_width="wrap_content"
@@ -38,23 +34,6 @@
         android:layout_centerVertical="true"
         android:orientation="horizontal"
         android:gravity="center_vertical">
-
-        <ImageView
-            android:layout_width="14dp"
-            android:layout_height="14dp"
-            android:src="@drawable/ic_bell_muted"
-            android:layout_marginEnd="8dp" />
-
-        <TextView
-            android:id="@+id/tv_clock"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:includeFontPadding="false"
-            android:layout_marginEnd="8dp"
-            tools:text="02:06" />
 
         <TextView
             android:id="@+id/tv_battery_pct"
@@ -72,4 +51,16 @@
             android:layout_height="22dp"
             android:src="@drawable/ic_battery_bars" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:includeFontPadding="false"
+        android:singleLine="true"
+        tools:text="Menu" />
 </RelativeLayout>
