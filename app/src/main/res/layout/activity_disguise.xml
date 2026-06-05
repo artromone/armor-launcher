@@ -78,26 +78,25 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <!-- ================== APP SHORTCUTS ROW ================== -->
+    <!-- ================== PINNED APPS ================== -->
     <LinearLayout
+        android:id="@+id/pinned_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp" />
+
+    <TextView
+        android:id="@+id/pinned_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:paddingHorizontal="14dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="6dp">
-
-        <ImageView
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_phone"
-            android:layout_marginEnd="18dp" />
-
-        <ImageView
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:src="@drawable/ic_messages" />
-    </LinearLayout>
+        android:paddingVertical="10dp"
+        android:text="No pinned apps. Press Menu, then long-press Center to pin."
+        android:textColor="#888888"
+        android:textSize="13sp"
+        android:visibility="gone" />
 
     <!-- ================== STATUS LINE ================== -->
     <LinearLayout

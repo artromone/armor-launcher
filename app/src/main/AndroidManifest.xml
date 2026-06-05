@@ -44,13 +44,6 @@
             android:theme="@style/Theme.Armor.NoBars" />
 
         <activity
-            android:name=".StubActivity"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.Armor.NoBars" />
-
-        <activity
             android:name=".CalculatorActivity"
             android:exported="false"
             android:launchMode="singleTop"

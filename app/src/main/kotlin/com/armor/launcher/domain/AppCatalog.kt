@@ -1,65 +1,31 @@
 package com.armor.launcher.domain
 
-import com.armor.launcher.ArmorSettingsActivity
-import com.armor.launcher.R
-
 /**
- * Single source of truth for the disguise-mode app catalog.
+ * Static catalog data that survives the move to a dynamic, MRU-sorted app
+ * drawer. The curated 3x3 MENU and AppEntry type were retired together with
+ * the old MenuActivity; what remains is the Lock Task whitelist baseline.
  *
- * Package names verified on Duoqin Qin F22 stock ROM
- * (see `adb shell dumpsys package packages | grep ^Package`).
+ * DisguiseActivity merges this baseline with the user's pinned packages
+ * before passing to DPM.setLockTaskPackages(), so any pinned app is launchable
+ * inside kiosk mode without needing to be listed here.
  */
-data class AppEntry(
-    val key: String,
-    val label: String,
-    val iconRes: Int,
-    val launchClass: Class<*>? = null,
-    val launchPackage: String? = null,
-    val systemSettingsAction: String? = null,
-    val isStub: Boolean = false,
-)
-
 object AppCatalog {
 
     /**
-     * 3×3 grid (8 cells used, 9th empty).
-     * NO calendar / email / browser / play / vpn — those would hint at internet.
+     * Packages that must remain launchable from inside Lock Task regardless
+     * of what the user has pinned. These are either Armor itself, dev tools
+     * needed for in-place updates, or telephony/settings helpers other apps
+     * depend on transitively.
      */
-    val MENU: List<AppEntry> = listOf(
-        AppEntry("phone",      "Phone",      R.drawable.ic_phone,
-            launchPackage = "com.android.dialer"),
-        AppEntry("contacts",   "Contacts",   R.drawable.ic_contacts,
-            launchPackage = "com.google.android.contacts"),
-        AppEntry("messages",   "Messages",   R.drawable.ic_messages,
-            launchPackage = "com.google.android.apps.messaging"),
-        AppEntry("files",      "Files",      R.drawable.ic_files,
-            launchPackage = "ru.zdevs.zarchiver"),
-        AppEntry("files2",     "Files 2",    R.drawable.ic_files,
-            launchPackage = "com.android.documentsui"),  // system Files
-        AppEntry("calculator", "Calculator", R.drawable.ic_calculator,
-            launchPackage = "com.google.android.calculator"),
-        AppEntry("clock",      "Clock",      R.drawable.ic_clock,
-            launchPackage = "com.google.android.deskclock"),
-        AppEntry("settings",   "Settings",   R.drawable.ic_settings,
-            launchClass = ArmorSettingsActivity::class.java),
-    )
-
-    /** Lock-task whitelist — these packages can be launched from inside kiosk. */
     val LOCK_TASK_WHITELIST: Array<String> = arrayOf(
         // ourselves
         "com.armor.launcher",
-        // dev tools
+        // dev tools — keep so APK reinstall works without leaving kiosk
         "ru.zdevs.zarchiver",
         "com.google.android.packageinstaller",
         "com.android.packageinstaller",
-        // disguise apps — verified on Qin F22
-        "com.android.dialer",
-        "com.google.android.contacts",
-        "com.google.android.apps.messaging",
-        "com.google.android.calculator",
-        "com.google.android.deskclock",
+        // helpers that other launched apps depend on
         "com.android.settings",
-        // helpers some of these depend on
         "com.android.phone",
         "com.android.server.telecom",
     )

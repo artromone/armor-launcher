@@ -9,12 +9,19 @@ import android.os.BatteryManager
 import android.os.Bundle
 import android.util.Log
 import android.view.KeyEvent
+import android.view.LayoutInflater
+import android.view.View
 import android.view.WindowManager
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import com.armor.launcher.domain.AppCatalog
 import com.armor.launcher.domain.HiddenAppsManager
+import com.armor.launcher.domain.MruTracker
 import com.armor.launcher.domain.PinManager
+import com.armor.launcher.domain.PinnedAppsManager
 import com.armor.launcher.platform.Dpm
+import com.armor.launcher.platform.InstalledApps
 import com.armor.launcher.platform.Intents
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -25,6 +32,9 @@ class DisguiseActivity : BaseDisguiseActivity() {
     private var tvTime: TextView? = null
     private var tvDate: TextView? = null
     private var tvBatteryPct: TextView? = null
+
+    private lateinit var pinned: PinnedAppsManager
+    private lateinit var mru: MruTracker
 
     private val batteryReceiver = object : BroadcastReceiver() {
         override fun onReceive(c: Context?, i: Intent?) {
@@ -38,8 +48,6 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // If a PIN is set and this is a cold start (no savedInstanceState),
-        // jump to the lock screen first.
         if (savedInstanceState == null && PinManager.forPin(this).isSet()
             && !intent.getBooleanExtra(EXTRA_FROM_LOCK, false)
         ) {
@@ -56,28 +64,67 @@ class DisguiseActivity : BaseDisguiseActivity() {
         tvTime = findViewById(R.id.tv_time)
         tvDate = findViewById(R.id.tv_date)
         tvBatteryPct = findViewById(R.id.tv_battery_pct)
+        pinned = PinnedAppsManager(this)
+        mru = MruTracker(this)
 
         bindSoftKey(R.id.btn_left, "Menu") {
             startActivity(Intent(this, MenuActivity::class.java))
         }
-        bindSoftKey(R.id.btn_right, "Contacts") {
-            val entry = AppCatalog.MENU.first { it.key == "contacts" }
-            val pkgIntent = entry.launchPackage?.let {
-                packageManager.getLaunchIntentForPackage(it)
+        // Hidden affordance: long-press right soft-key opens Armor settings,
+        // so the owner can reach PIN/secret config without exposing a tile
+        // an outside observer would notice.
+        findViewById<TextView>(R.id.btn_right).apply {
+            text = "Apps"
+            setOnClickListener { startActivity(Intent(this@DisguiseActivity, MenuActivity::class.java)) }
+            setOnLongClickListener {
+                startActivity(Intent(this@DisguiseActivity, ArmorSettingsActivity::class.java))
+                true
             }
-            if (pkgIntent != null) startActivity(pkgIntent)
         }
 
         updateClock()
-        tryStartLockTask()
         HiddenAppsManager(this).applyAll()
+        tryStartLockTask()
+        rebuildPinnedList()
     }
 
     override fun onResume() {
         super.onResume()
-        // Re-arm Lock Task in case the OS dropped it during pause (e.g. user
-        // navigated to system Settings and came back).
         tryStartLockTask()
+        rebuildPinnedList()
+    }
+
+    private fun rebuildPinnedList() {
+        val container = findViewById<LinearLayout>(R.id.pinned_list) ?: return
+        val emptyHint = findViewById<TextView>(R.id.pinned_empty)
+        container.removeAllViews()
+
+        val installed = InstalledApps.list(this).associateBy { it.pkg }
+        pinned.prune(installed.keys)
+        val items = pinned.list().mapNotNull { installed[it] }
+
+        if (items.isEmpty()) {
+            emptyHint?.visibility = View.VISIBLE
+            return
+        }
+        emptyHint?.visibility = View.GONE
+
+        val inflater = LayoutInflater.from(this)
+        for (item in items) {
+            val row = inflater.inflate(R.layout.item_pinned_app, container, false)
+            row.findViewById<ImageView>(R.id.pin_icon).setImageDrawable(item.icon)
+            row.findViewById<TextView>(R.id.pin_label).text = item.label
+            row.isFocusable = true
+            row.isFocusableInTouchMode = true
+            row.setOnClickListener {
+                if (InstalledApps.launch(this, item.pkg)) mru.recordLaunch(item.pkg)
+            }
+            row.setOnFocusChangeListener { v, hasFocus ->
+                v.setBackgroundResource(if (hasFocus) R.drawable.bg_item_selected else 0)
+            }
+            container.addView(row)
+        }
+        container.getChildAt(0).post { container.getChildAt(0).requestFocus() }
     }
 
     override fun updateClock() {
@@ -92,7 +139,6 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
     override fun onStart() {
         super.onStart()
-        // sticky broadcast — registering yields the current battery state immediately.
         val sticky = registerReceiver(batteryReceiver, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         if (sticky != null) {
             val level = sticky.getIntExtra(BatteryManager.EXTRA_LEVEL, -1)
@@ -109,11 +155,15 @@ class DisguiseActivity : BaseDisguiseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        when (keyCode) {
-            KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER -> {
-                startActivity(Intent(this, MenuActivity::class.java)); return true
+        // D-pad center / Enter: if a pinned row has focus, let it click;
+        // otherwise fall through to opening Menu. Up/Down navigate naturally
+        // between focusable pinned rows.
+        if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
+            val focus = currentFocus
+            if (focus != null && focus.id != R.id.btn_left && focus.id != R.id.btn_right) {
+                focus.performClick(); return true
             }
-            // BACK falls through to Base → clicks btn_right ("Contacts").
+            startActivity(Intent(this, MenuActivity::class.java)); return true
         }
         return super.onKeyDown(keyCode, event)
     }
@@ -129,19 +179,16 @@ class DisguiseActivity : BaseDisguiseActivity() {
                 ComponentName(this, DisguiseActivity::class.java)
             )
 
-            // Kill the system keyguard so there's no PIN screen and no
-            // swipe-down status bar gap between power-on and Armor. Fails
-            // silently if the user still has a PIN/pattern/password set —
-            // they must remove it in Settings → Security → Screen lock first.
             runCatching { dpm.setKeyguardDisabled(admin, true) }
                 .onFailure { Log.w(TAG, "setKeyguardDisabled failed", it) }
 
-            dpm.setLockTaskPackages(admin, AppCatalog.LOCK_TASK_WHITELIST)
+            // Whitelist must include every pinned package — otherwise launching
+            // a pinned app while in Lock Task throws SecurityException.
+            val whitelist = (AppCatalog.LOCK_TASK_WHITELIST.toSet() + pinned.list()).toTypedArray()
+            dpm.setLockTaskPackages(admin, whitelist)
             dpm.setLockTaskFeatures(admin, 0)
             startLockTask()
 
-            // Kill the status-bar peek (swipe-down sliver). Requires Device
-            // Owner + active Lock Task.
             runCatching { dpm.setStatusBarDisabled(admin, true) }
                 .onFailure { Log.w(TAG, "setStatusBarDisabled failed", it) }
         }
