@@ -7,14 +7,19 @@
 
     <include layout="@layout/component_title_bar" />
 
-    <GridLayout
-        android:id="@+id/grid"
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:columnCount="3"
-        android:rowCount="3"
-        android:padding="8dp" />
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:id="@+id/list_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="4dp" />
+    </ScrollView>
 
     <include layout="@layout/component_soft_keys" />
 </LinearLayout>
