@@ -96,7 +96,7 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
             setPadding(24, 24, 24, 24)
             gravity = Gravity.CENTER_VERTICAL
             isFocusable = true
-            isFocusableInTouchMode = false
+            isFocusableInTouchMode = true
             setOnClickListener { onClick() }
             setOnFocusChangeListener { v, hasFocus ->
                 v.setBackgroundResource(if (hasFocus) R.drawable.bg_item_selected else 0)

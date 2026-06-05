@@ -45,7 +45,7 @@ class HiddenAppsActivity : BaseDisguiseActivity() {
             updateStatus(status, manager.isHidden(item.pkg))
 
             row.isFocusable = true
-            row.isFocusableInTouchMode = false
+            row.isFocusableInTouchMode = true
             row.setOnClickListener {
                 val newState = !manager.isHidden(item.pkg)
                 val ok = manager.setHidden(item.pkg, newState)

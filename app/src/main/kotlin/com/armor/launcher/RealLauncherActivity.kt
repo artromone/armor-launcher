@@ -46,7 +46,7 @@ class RealLauncherActivity : BaseDisguiseActivity() {
             row.findViewById<TextView>(R.id.app_status).text = ""
 
             row.isFocusable = true
-            row.isFocusableInTouchMode = false
+            row.isFocusableInTouchMode = true
             row.setOnClickListener { launchApp(item.pkg) }
             row.setOnFocusChangeListener { v, hasFocus ->
                 v.setBackgroundResource(if (hasFocus) R.drawable.bg_item_selected else 0)
