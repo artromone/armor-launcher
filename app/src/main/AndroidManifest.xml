@@ -3,6 +3,18 @@
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!--
+        Package visibility (Android 11+). A launcher needs to enumerate every
+        installable app on the device. Without this, queryIntentActivities()
+        for ACTION_MAIN/CATEGORY_LAUNCHER returns only a curated subset (apps
+        the system happens to expose via some other filter), so e.g. Calculator
+        and Clock vanish from the "All apps" list even though they are
+        installed. Default-launcher role normally grants the same exemption,
+        but only AFTER the role is actually assigned at runtime — which is
+        race-y on first boot and absent when Device Owner is cleared.
+    -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
+
     <application
         android:label="Armor"
         android:icon="@android:drawable/sym_def_app_icon"
