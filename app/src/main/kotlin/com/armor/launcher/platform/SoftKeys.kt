@@ -17,6 +17,13 @@ internal object SoftKeys {
         activity.findViewById<TextView>(id).apply {
             text = label
             setOnClickListener { onClick() }
+            // Soft-keys are labels for hardware Soft-L/R, not D-pad targets.
+            // If they're focusable, D-pad can land here; then a finger tap
+            // flips the window into touch mode and clears the focus
+            // highlight — which gives away that the screen is a touchscreen.
+            // Locking them out of focus traversal keeps the disguise intact.
+            isFocusable = false
+            isFocusableInTouchMode = false
         }
     }
 

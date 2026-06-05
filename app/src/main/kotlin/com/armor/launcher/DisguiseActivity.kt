@@ -70,16 +70,8 @@ class DisguiseActivity : BaseDisguiseActivity() {
         bindSoftKey(R.id.btn_left, "Menu") {
             startActivity(Intent(this, MenuActivity::class.java))
         }
-        // Hidden affordance: long-press right soft-key opens Armor settings,
-        // so the owner can reach PIN/secret config without exposing a tile
-        // an outside observer would notice.
-        findViewById<TextView>(R.id.btn_right).apply {
-            text = "Apps"
-            setOnClickListener { startActivity(Intent(this@DisguiseActivity, MenuActivity::class.java)) }
-            setOnLongClickListener {
-                startActivity(Intent(this@DisguiseActivity, ArmorSettingsActivity::class.java))
-                true
-            }
+        bindSoftKey(R.id.btn_right, "Settings") {
+            startActivity(Intent(this, ArmorSettingsActivity::class.java))
         }
 
         updateClock()
@@ -111,18 +103,18 @@ class DisguiseActivity : BaseDisguiseActivity() {
 
         val inflater = LayoutInflater.from(this)
         for (item in items) {
-            val row = inflater.inflate(R.layout.item_pinned_app, container, false)
-            row.findViewById<ImageView>(R.id.pin_icon).setImageDrawable(item.icon)
-            row.findViewById<TextView>(R.id.pin_label).text = item.label
-            row.isFocusable = true
-            row.isFocusableInTouchMode = true
-            row.setOnClickListener {
+            val cell = inflater.inflate(R.layout.item_pinned_app, container, false) as ImageView
+            cell.setImageDrawable(item.icon)
+            cell.contentDescription = item.label
+            cell.isFocusable = true
+            cell.isFocusableInTouchMode = true
+            cell.setOnClickListener {
                 if (InstalledApps.launch(this, item.pkg)) mru.recordLaunch(item.pkg)
             }
-            row.setOnFocusChangeListener { v, hasFocus ->
+            cell.setOnFocusChangeListener { v, hasFocus ->
                 v.setBackgroundResource(if (hasFocus) R.drawable.bg_item_selected else 0)
             }
-            container.addView(row)
+            container.addView(cell)
         }
         container.getChildAt(0).post { container.getChildAt(0).requestFocus() }
     }
@@ -155,9 +147,9 @@ class DisguiseActivity : BaseDisguiseActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        // D-pad center / Enter: if a pinned row has focus, let it click;
-        // otherwise fall through to opening Menu. Up/Down navigate naturally
-        // between focusable pinned rows.
+        // D-pad center / Enter: if a pinned cell has focus, let it click;
+        // otherwise fall through to opening Menu. Left/Right navigate
+        // naturally between the focusable pinned icons.
         if (keyCode == KeyEvent.KEYCODE_DPAD_CENTER || keyCode == KeyEvent.KEYCODE_ENTER) {
             val focus = currentFocus
             if (focus != null && focus.id != R.id.btn_left && focus.id != R.id.btn_right) {
