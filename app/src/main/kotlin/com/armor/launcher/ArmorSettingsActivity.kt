@@ -75,7 +75,7 @@ class ArmorSettingsActivity : BaseDisguiseActivity() {
                 })
             }
             addRow(container, "Lock Real Mode now") {
-                RealMode.lock()
+                RealMode.lock(this)
                 recreate()
             }
         }

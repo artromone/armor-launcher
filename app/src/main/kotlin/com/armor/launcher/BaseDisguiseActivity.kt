@@ -49,11 +49,11 @@ abstract class BaseDisguiseActivity : Activity() {
     private val lockGate = LockGate(this)
     private val idleSleep = IdleSleepController(this) { lockGate.markLocked() }
     private val secretCombo = SecretComboDetector(this) {
-        RealMode.unlock()
+        RealMode.unlock(this)
         startActivity(Intent(this, RealLauncherActivity::class.java))
     }
     private val emergencyLock = EmergencyLockDetector {
-        RealMode.lock()
+        RealMode.lock(this)
         startActivity(Intents.clearTopHome(this, DisguiseActivity::class.java))
     }
 

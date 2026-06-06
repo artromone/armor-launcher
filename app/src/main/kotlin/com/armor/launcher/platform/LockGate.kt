@@ -36,7 +36,7 @@ internal class LockGate(private val activity: Activity) {
 
     /** Called from both the broadcast and the idle-sleep path. */
     fun markLocked() {
-        RealMode.lock()
+        RealMode.lock(activity)
         if (PinManager.forPin(activity).isSet()) {
             Prefs.lockState(activity).edit {
                 putBoolean(Prefs.KEY_NEEDS_LOCK, true)
